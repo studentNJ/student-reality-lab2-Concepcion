@@ -10,7 +10,7 @@ done
 
 ## Phases
 
-[ ] Phase 1 Domain extraction  
+[~] Phase 1 Domain extraction  
 [ ] Phase 2 Shared schemas  
 [ ] Phase 3 MCP server  
 [ ] Phase 4 Graph tool  
@@ -23,16 +23,20 @@ done
 
 ## Current Focus
 
-Write current phase here.
+Phase 1 Domain extraction.
 
 ---
 
 ## Notes
 
-Add development notes here.
+- Created the initial workspace scaffold and `packages/domain` package.
+- Implemented Phase 1 affordability, metrics, trend, and data source services.
+- Added local sample data under `data/processed` for v2-only development.
+- Added domain tests covering the extracted behavior from the reference implementation.
+- Verified with `npm run typecheck` and `npm test`.
 
 ---
 
 ## Next Step
 
-Write next task here.
+Refine the domain export surface if needed, then begin Phase 1 compatibility wiring for downstream packages and document updates.
