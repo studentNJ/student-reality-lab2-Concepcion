@@ -9,9 +9,10 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "npm run typecheck",
-    "test": "npm run test:domain && npm run test:shared",
+    "test": "npm run test:domain && npm run test:shared && npm run test:mcp",
     "test:domain": "vitest run tests/domain --passWithNoTests",
-    "test:shared": "vitest run tests/shared --passWithNoTests"
+    "test:shared": "vitest run tests/shared --passWithNoTests",
+    "test:mcp": "vitest run tests/mcp-server --passWithNoTests"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
+  affordabilityScenarioGraphHelperInputSchema,
   calculateAffordabilityRequestSchema,
   chartSpecSchema,
+  createGraphHelperInputSchema,
   domainDataSourceStatusSchema,
   getMetrosResponseDataSchema,
   graphTypeSchema,
   metricsRangeRequestSchema,
   metricsSnapshotRequestSchema,
+  metroCompareGraphHelperInputSchema,
+  metroSnapshotGraphHelperInputSchema,
   metroTrendRequestSchema,
+  metroTrendGraphHelperInputSchema,
 } from "../../packages/shared/src/index.js";
 
 describe("shared schemas", () => {
@@ -78,6 +83,94 @@ describe("shared schemas", () => {
 
     expect(chartSpec.series).toHaveLength(1);
     expect(() => graphTypeSchema.parse("scatterplot")).toThrow();
+  });
+
+  it("accepts helper graph inputs for the supported derived-data modes", () => {
+    const snapshotHelper = metroSnapshotGraphHelperInputSchema.parse({
+      inputMode: "helper",
+      graphType: "metro_snapshot_bar",
+      sourceTool: "get_metrics_snapshot",
+      data: {
+        year: 2024,
+        rows: [
+          {
+            metro_id: "35620",
+            metro_name: "New York-Newark-Jersey City",
+            year: 2024,
+            median_annual_income: 72600,
+            median_monthly_income: 6050,
+            median_gross_rent: 2280,
+            rent_burden_percent: 37.69,
+          },
+        ],
+      },
+      metric: "rent_burden_percent",
+    });
+
+    const trendHelper = metroTrendGraphHelperInputSchema.parse({
+      inputMode: "helper",
+      graphType: "metro_trend_line",
+      sourceTool: "get_metro_trend",
+      data: {
+        metro: "Chicago",
+        startYear: 2020,
+        endYear: 2024,
+        series: [
+          { year: 2020, value: 28.54 },
+          { year: 2021, value: 28.77 },
+        ],
+      },
+    });
+
+    const affordabilityHelper = affordabilityScenarioGraphHelperInputSchema.parse({
+      inputMode: "helper",
+      graphType: "affordability_scenario_bar",
+      sourceTool: "calculate_affordability",
+      scenarios: [
+        {
+          label: "Solo in Chicago",
+          data: {
+            inputs: { annualIncome: 72000, targetMetro: "Chicago" },
+            results: {
+              maxAffordableMonthlyHousing: 1800,
+              affordabilityRatio: 0.3,
+              summary: "At 30% of monthly income, the maximum affordable monthly housing cost is $1800.",
+            },
+          },
+        },
+      ],
+    });
+
+    const helperUnion = createGraphHelperInputSchema.parse(snapshotHelper);
+
+    expect(snapshotHelper.graphType).toBe("metro_snapshot_bar");
+    expect(trendHelper.graphType).toBe("metro_trend_line");
+    expect(affordabilityHelper.graphType).toBe("affordability_scenario_bar");
+    expect(helperUnion.inputMode).toBe("helper");
+  });
+
+  it("rejects invalid helper comparison payloads", () => {
+    expect(() =>
+      metroCompareGraphHelperInputSchema.parse({
+        inputMode: "helper",
+        graphType: "metro_compare_line",
+        sourceTool: "get_metro_trend",
+        data: [
+          {
+            metro: "Chicago",
+            startYear: 2020,
+            endYear: 2024,
+            series: [{ year: 2020, value: 28.54 }],
+          },
+          {
+            metro: "Miami",
+            startYear: 2021,
+            endYear: 2024,
+            series: [{ year: 2021, value: 38.83 }],
+          },
+        ],
+      }),
+    ).toThrow("all comparison trend inputs must share the same year range");
   });
 
   it("validates the domain data source status shape", () => {

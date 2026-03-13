@@ -9,6 +9,7 @@ import {
 } from "../../packages/domain/src/index.js";
 import {
   affordabilityResultSchema,
+  createGraphHelperInputSchema,
   domainDataSourceStatusSchema,
   getMetrosResponseDataSchema,
   metricsSnapshotResponseDataSchema,
@@ -39,5 +40,35 @@ describe("shared schema compatibility with domain outputs", () => {
 
     expect(trend.every((point) => trendPointSchema.safeParse(point).success)).toBe(true);
     expect(() => domainDataSourceStatusSchema.parse(status)).not.toThrow();
+  });
+
+  it("accepts helper graph inputs built from current domain outputs", () => {
+    const snapshot = getMetricsSnapshotByYear(2024);
+    const trend = getMetroTrend("35620", 2020, 2024);
+
+    const snapshotHelper = {
+      inputMode: "helper",
+      graphType: "metro_snapshot_bar",
+      sourceTool: "get_metrics_snapshot",
+      data: {
+        year: 2024,
+        rows: snapshot,
+      },
+    };
+
+    const trendHelper = {
+      inputMode: "helper",
+      graphType: "metro_trend_line",
+      sourceTool: "get_metro_trend",
+      data: {
+        metro: "35620",
+        startYear: 2020,
+        endYear: 2024,
+        series: trend.map((point) => ({ year: point.year, value: point.rent_burden_percent })),
+      },
+    };
+
+    expect(() => createGraphHelperInputSchema.parse(snapshotHelper)).not.toThrow();
+    expect(() => createGraphHelperInputSchema.parse(trendHelper)).not.toThrow();
   });
 });
