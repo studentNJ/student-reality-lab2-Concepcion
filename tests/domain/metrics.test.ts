@@ -37,6 +37,42 @@ describe("metrics domain", () => {
     expect(rows.every((row) => row.sample_size === 5)).toBe(true);
   });
 
+  it("supports injected rows and same-year aggregation", () => {
+    const rows = getMetricsByRange(2022, 2022, [
+      {
+        metro_id: "11111",
+        metro_name: "Alpha Metro",
+        year: 2022,
+        median_annual_income: 60000,
+        median_monthly_income: 5000,
+        median_gross_rent: 1500,
+        rent_burden_percent: 30,
+      },
+      {
+        metro_id: "11111",
+        metro_name: "Alpha Metro",
+        year: 2021,
+        median_annual_income: 57600,
+        median_monthly_income: 4800,
+        median_gross_rent: 1400,
+        rent_burden_percent: 29,
+      },
+    ]);
+
+    expect(rows).toEqual([
+      {
+        metro_id: "11111",
+        metro_name: "Alpha Metro",
+        start_year: 2022,
+        end_year: 2022,
+        sample_size: 1,
+        median_monthly_income: 5000,
+        median_gross_rent: 1500,
+        rent_burden_percent: 30,
+      },
+    ]);
+  });
+
   it("returns sorted trend for metro, supports year filters, and empty for missing metro", () => {
     const trend = getMetroTrend("35620");
     const years = trend.map((item) => item.year);
@@ -76,5 +112,61 @@ describe("metrics domain", () => {
     expect(years[years.length - 1]).toBe(2025);
     expect(status.datasetType).toBe("sample");
     expect(status.metroCount).toBe(10);
+  });
+
+  it("filters custom trend rows by metro and year range", () => {
+    const trend = getMetroTrend("11111", 2021, 2022, [
+      {
+        metro_id: "11111",
+        metro_name: "Alpha Metro",
+        year: 2020,
+        median_annual_income: 58800,
+        median_monthly_income: 4900,
+        median_gross_rent: 1450,
+        rent_burden_percent: 29.6,
+      },
+      {
+        metro_id: "11111",
+        metro_name: "Alpha Metro",
+        year: 2021,
+        median_annual_income: 60000,
+        median_monthly_income: 5000,
+        median_gross_rent: 1500,
+        rent_burden_percent: 30,
+      },
+      {
+        metro_id: "11111",
+        metro_name: "Alpha Metro",
+        year: 2022,
+        median_annual_income: 61200,
+        median_monthly_income: 5100,
+        median_gross_rent: 1550,
+        rent_burden_percent: 30.39,
+      },
+      {
+        metro_id: "22222",
+        metro_name: "Beta Metro",
+        year: 2022,
+        median_annual_income: 84000,
+        median_monthly_income: 7000,
+        median_gross_rent: 1900,
+        rent_burden_percent: 27.14,
+      },
+    ]);
+
+    expect(trend).toEqual([
+      {
+        year: 2021,
+        median_monthly_income: 5000,
+        median_gross_rent: 1500,
+        rent_burden_percent: 30,
+      },
+      {
+        year: 2022,
+        median_monthly_income: 5100,
+        median_gross_rent: 1550,
+        rent_burden_percent: 30.39,
+      },
+    ]);
   });
 });

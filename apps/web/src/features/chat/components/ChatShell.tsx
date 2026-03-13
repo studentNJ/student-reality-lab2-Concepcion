@@ -21,16 +21,35 @@ const initialMessages: ChatMessage[] = [
   },
 ];
 
+function buildPendingContent(prompt: string): string {
+  const normalizedPrompt = prompt.toLowerCase();
+
+  if (normalizedPrompt.includes("chart") || normalizedPrompt.includes("trend") || normalizedPrompt.includes("graph")) {
+    return "Building the chart request, running the needed tools, and formatting the result.";
+  }
+
+  if (normalizedPrompt.includes("afford") || normalizedPrompt.includes("salary") || normalizedPrompt.includes("income")) {
+    return "Calculating the affordability scenario and checking the requested metro context.";
+  }
+
+  if (normalizedPrompt.includes("source") || normalizedPrompt.includes("dataset") || normalizedPrompt.includes("status")) {
+    return "Checking the current data source status and packaging the response.";
+  }
+
+  return "Planning the request and gathering the tool output needed for the answer.";
+}
+
 export function ChatShell() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isPending, setIsPending] = useState(false);
+  const [pendingContent, setPendingContent] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [plannerMode, setPlannerMode] = useState<"live-api" | "model" | "fallback">("live-api");
   const pendingMessage: ChatMessage = {
     id: "assistant-pending",
     role: "assistant",
     state: "loading",
-    content: "",
+    content: pendingContent,
   };
 
   const visibleMessages = isPending ? [...messages, pendingMessage] : messages;
@@ -55,6 +74,7 @@ export function ChatShell() {
 
     setMessages((currentMessages) => [...currentMessages, userMessage]);
     setIsPending(true);
+  setPendingContent(buildPendingContent(prompt));
 
     try {
       const response = await fetch("/api/chat", {
@@ -81,6 +101,10 @@ export function ChatShell() {
         content: "The chat API returned an unexpected response.",
       };
 
+      if (!response.ok && assistantMessage.state !== "error") {
+        assistantMessage.state = "error";
+      }
+
       setMessages((currentMessages) => [...currentMessages, assistantMessage]);
       setConversationId((currentConversationId) => payload.meta?.conversationId ?? currentConversationId);
       setPlannerMode(payload.meta?.planner ?? "fallback");
@@ -97,6 +121,7 @@ export function ChatShell() {
       setPlannerMode("fallback");
     } finally {
       setIsPending(false);
+      setPendingContent("");
     }
   }
 

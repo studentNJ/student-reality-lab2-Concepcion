@@ -10,6 +10,7 @@
     "dev": "npm --workspace @student-reality-lab/web run dev",
     "build:web": "npm --workspace @student-reality-lab/web run build",
     "start:web": "npm --workspace @student-reality-lab/web run start",
+    "clean:web-build": "node scripts/clean-web-build.mjs",
     "db:generate": "npm --workspace @student-reality-lab/db run prisma:generate",
     "db:migrate": "npm --workspace @student-reality-lab/db run prisma:migrate",
     "db:push": "npm --workspace @student-reality-lab/db run prisma:push",

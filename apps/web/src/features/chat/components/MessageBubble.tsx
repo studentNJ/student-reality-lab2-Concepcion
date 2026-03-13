@@ -22,10 +22,13 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {isError ? " • Needs attention" : null}
       </div>
       {isLoading ? (
-        <div className="typing-indicator" aria-label="Assistant is responding">
-          <span />
-          <span />
-          <span />
+        <div className="loading-block">
+          {message.content ? <p className="message-content loading-copy">{message.content}</p> : null}
+          <div className="typing-indicator" aria-label="Assistant is responding">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
       ) : (
         <p className="message-content">{message.content}</p>

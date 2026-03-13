@@ -40,6 +40,11 @@ describe("affordability domain", () => {
     expect(getRoommateAdjustedRent(2400, 2)).toBe(800);
   });
 
+  it("rounds roommate-adjusted rent and rejects invalid roommate counts", () => {
+    expect(getRoommateAdjustedRent(2000, 2)).toBe(666.67);
+    expect(() => getRoommateAdjustedRent(2000, -1)).toThrow("roommates must be a non-negative whole number");
+  });
+
   it("supports estimated after-tax income and salary target", () => {
     const result = calculateAffordability(72000, 1800, {
       monthlyStudentLoan: 200,
@@ -64,5 +69,17 @@ describe("affordability domain", () => {
 
   it("computes the salary needed to hit the 30 percent rule", () => {
     expect(calculateSalaryNeededForThirtyPercent(1500)).toBe(60000);
+  });
+
+  it("rounds affordability outputs for uneven rent splits", () => {
+    const result = calculateAffordability(80000, 2000, {
+      roommates: 2,
+      monthlyDebt: 333.33,
+    });
+
+    expect(result.effectiveMonthlyRent).toBe(666.67);
+    expect(result.rentBurdenPercent).toBe(10);
+    expect(result.monthlyDisposableIncome).toBe(5666.67);
+    expect(result.salaryNeededForThirtyPercent).toBe(26666.8);
   });
 });

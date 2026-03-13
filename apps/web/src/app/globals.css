@@ -168,6 +168,15 @@ body {
   line-height: 1.55;
 }
 
+.loading-block {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.loading-copy {
+  color: rgba(20, 20, 20, 0.72);
+}
+
 .typing-indicator {
   display: inline-flex;
   align-items: center;
@@ -311,6 +320,29 @@ body {
   gap: 0.65rem;
 }
 
+.chart-preview-frame {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.chart-plot-area {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.chart-y-axis {
+  display: grid;
+  justify-items: end;
+  align-content: space-between;
+  min-height: 160px;
+  padding: 0.1rem 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  color: rgba(20, 20, 20, 0.64);
+}
+
 .chart-svg {
   width: 100%;
   height: 160px;
@@ -330,9 +362,20 @@ body {
   stroke-linejoin: round;
 }
 
+.chart-threshold-line {
+  stroke: rgba(181, 82, 61, 0.58);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 6;
+}
+
+.chart-threshold-label {
+  fill: var(--brick);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
 .chart-ticks {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.4rem;
   font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
@@ -363,12 +406,16 @@ body {
   gap: 0.35rem;
   height: 100%;
   align-items: end;
+  min-height: 152px;
 }
 
 .chart-bar-column {
   height: 100%;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: flex-end;
+  flex-direction: column;
+  gap: 0.35rem;
   flex: 1;
 }
 
@@ -376,6 +423,14 @@ body {
   width: 100%;
   border-radius: 18px 18px 8px 8px;
   min-height: 16px;
+}
+
+.chart-bar-value {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+  color: rgba(20, 20, 20, 0.68);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
 .chart-group-label {
@@ -390,6 +445,12 @@ body {
   flex-wrap: wrap;
   gap: 0.9rem;
   margin-bottom: 1rem;
+}
+
+.chart-axis-caption {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  color: rgba(20, 20, 20, 0.65);
 }
 
 .chart-legend-item {
@@ -588,9 +649,25 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .chart-preview-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-y-axis {
+    grid-auto-flow: column;
+    justify-items: start;
+    justify-content: space-between;
+    min-height: auto;
+  }
+
   .chart-ticks,
   .chart-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .chart-bar-value {
+    writing-mode: horizontal-tb;
+    transform: none;
   }
 
   .prompt-actions {

@@ -17,13 +17,13 @@ done
 [x] Phase 5 Chat UI  
 [x] Phase 6 AI orchestration  
 [x] Phase 7 Persistence  
-[ ] Phase 8 Polish  
+[x] Phase 8 Polish  
 
 ---
 
 ## Current Focus
 
-Phase 7 complete. Ready for Phase 8.
+Phase 8 complete. Polish and documentation pass landed.
 
 ---
 
@@ -53,9 +53,14 @@ Phase 7 complete. Ready for Phase 8.
 - Added a new `packages/db` Prisma workspace package with SQLite-backed conversation, message, and tool-call persistence models.
 - Wired the chat API to persist each user/assistant turn and return a stable `conversationId` so later requests stay attached to the same stored conversation.
 - Persisted assistant chart specs, planner metadata, and tool call summaries without leaking database logic into the UI or orchestration layer.
+- Improved loading-state UX with contextual assistant progress copy during live requests.
+- Improved chart readability with visible scale labels, threshold guides, and compact value labels in chart previews.
+- Added extra domain tests covering same-year aggregation, injected trend rows, roommate validation, and rounded affordability outputs.
+- Added a dedicated MCP tool pattern document to describe the expected implementation and registration flow.
+- Added a safe `clean:web-build` workflow after tracing a false-positive persistence alarm back to Turbopack cache writes caused by deleting `.next` during a running dev server.
 
 ---
 
 ## Next Step
 
-Begin Phase 8 polish on top of the persisted chat flow.
+Phase 8 complete.
