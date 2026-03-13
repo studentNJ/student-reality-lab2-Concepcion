@@ -10,11 +10,11 @@ done
 
 ## Phases
 
-[~] Phase 1 Domain extraction  
-[~] Phase 2 Shared schemas  
-[~] Phase 3 MCP server  
-[~] Phase 4 Graph tool  
-[ ] Phase 5 Chat UI  
+[x] Phase 1 Domain extraction  
+[x] Phase 2 Shared schemas  
+[x] Phase 3 MCP server  
+[x] Phase 4 Graph tool  
+[x] Phase 5 Chat UI  
 [ ] Phase 6 AI orchestration  
 [ ] Phase 7 Persistence  
 [ ] Phase 8 Polish  
@@ -23,7 +23,7 @@ done
 
 ## Current Focus
 
-Phase 4 Graph tool.
+Phase 5 complete. Awaiting confirmation before Phase 6.
 
 ---
 
@@ -41,9 +41,13 @@ Phase 4 Graph tool.
 - Added tool-level tests for success and failure envelopes.
 - Added the `create_graph` MCP tool with separate builders for all four planned graph types.
 - Added graph tool tests to verify every supported chart type and invalid-input rejection.
+- Created the initial `apps/web` Next app scaffold and Phase 5 chat components.
+- Wired a demo chat shell that renders assistant messages, tool cards, and chart cards using the current graph spec contract.
+- Upgraded the chart result card to render line and grouped-bar previews plus legend, narrative, and annotation details from the chart spec.
+- Added Phase 5 polish with starter prompts, assistant working state, simulated error state, empty-state handling, and conversation status indicators.
 
 ---
 
 ## Next Step
 
-Connect the graph tool to richer data flows and then begin Phase 5 chat UI scaffolding.
+Await confirmation before starting Phase 6 API and orchestration wiring.

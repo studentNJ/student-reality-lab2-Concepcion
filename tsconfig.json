@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
+    "jsx": "react-jsx",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -18,6 +19,9 @@
       ],
       "@student-reality-lab/mcp-server": [
         "packages/mcp-server/src/index.ts"
+      ],
+      "@web/*": [
+        "apps/web/src/*"
       ]
     },
     "types": [
@@ -26,6 +30,8 @@
     ]
   },
   "include": [
+    "apps/**/*.ts",
+    "apps/**/*.tsx",
     "packages/**/*.ts",
     "tests/**/*.ts"
   ]

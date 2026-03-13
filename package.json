@@ -7,6 +7,9 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "npm --workspace @student-reality-lab/web run dev",
+    "build:web": "npm --workspace @student-reality-lab/web run build",
+    "start:web": "npm --workspace @student-reality-lab/web run start",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "npm run typecheck",
     "test": "npm run test:domain && npm run test:shared && npm run test:mcp",
