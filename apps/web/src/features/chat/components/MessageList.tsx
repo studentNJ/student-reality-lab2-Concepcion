@@ -25,7 +25,9 @@ export function MessageList({ messages }: MessageListProps) {
       {messages.map((message) => (
         <div className="message-stack" key={message.id}>
           <MessageBubble message={message} />
-          {message.toolCall ? <ToolCallCard toolCall={message.toolCall} /> : null}
+          {(message.toolCalls ?? (message.toolCall ? [message.toolCall] : [])).map((toolCall, index) => (
+            <ToolCallCard key={`${message.id}-${toolCall.toolName}-${index}`} toolCall={toolCall} />
+          ))}
           {message.chartSpec ? <ChartResultCard chartSpec={message.chartSpec} /> : null}
         </div>
       ))}

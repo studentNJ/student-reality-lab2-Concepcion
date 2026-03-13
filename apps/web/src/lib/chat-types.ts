@@ -13,5 +13,6 @@ export interface ChatMessage {
   content: string;
   state?: "complete" | "loading" | "error";
   toolCall?: ToolCallSummary;
+  toolCalls?: ToolCallSummary[];
   chartSpec?: ChartSpec;
 }

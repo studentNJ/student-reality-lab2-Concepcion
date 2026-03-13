@@ -1,4 +1,4 @@
-import { getMetroTrend } from "@student-reality-lab/domain";
+import { getMetroTrend, getMetros } from "@student-reality-lab/domain";
 import { metroTrendRequestSchema, metroTrendResponseDataSchema } from "@student-reality-lab/shared";
 import {
   createToolFailure,
@@ -17,9 +17,12 @@ export function getMetroTrendTool(input: unknown): ToolResult<{
 }> {
   try {
     const validated = metroTrendRequestSchema.parse(input);
-    const trend = getMetroTrend(validated.metro, validated.startYear, validated.endYear);
+    const metroRecord = getMetros().find((metro) => metro.id === validated.metro || metro.name.toLowerCase() === validated.metro.toLowerCase());
+    const resolvedMetroId = metroRecord?.id ?? validated.metro;
+    const resolvedMetroName = metroRecord?.name ?? validated.metro;
+    const trend = getMetroTrend(resolvedMetroId, validated.startYear, validated.endYear);
     const data = metroTrendResponseDataSchema.parse({
-      metro: validated.metro,
+      metro: resolvedMetroName,
       startYear: validated.startYear,
       endYear: validated.endYear,
       series: trend.map((point) => ({
@@ -28,7 +31,10 @@ export function getMetroTrendTool(input: unknown): ToolResult<{
       })),
     });
 
-    return createToolSuccess(toolName, data, { metric: "rent_burden_percent" });
+    return createToolSuccess(toolName, data, {
+      metric: "rent_burden_percent",
+      resolvedMetroId,
+    });
   } catch (error) {
     return createToolFailure(toolName, "GET_METRO_TREND_FAILED", normalizeErrorMessage(error));
   }
