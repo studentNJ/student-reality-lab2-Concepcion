@@ -24,6 +24,7 @@ const initialMessages: ChatMessage[] = [
 export function ChatShell() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isPending, setIsPending] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [plannerMode, setPlannerMode] = useState<"live-api" | "model" | "fallback">("live-api");
   const pendingMessage: ChatMessage = {
     id: "assistant-pending",
@@ -62,6 +63,7 @@ export function ChatShell() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          conversationId,
           prompt,
           history: messages.map((message) => ({ role: message.role, content: message.content })),
         }),
@@ -69,7 +71,7 @@ export function ChatShell() {
 
       const payload = await response.json() as {
         message?: ChatMessage;
-        meta?: { planner?: "model" | "fallback"; intent?: string };
+        meta?: { conversationId?: string; planner?: "model" | "fallback"; intent?: string };
       };
 
       const assistantMessage = payload.message ?? {
@@ -80,6 +82,7 @@ export function ChatShell() {
       };
 
       setMessages((currentMessages) => [...currentMessages, assistantMessage]);
+      setConversationId(payload.meta?.conversationId ?? null);
       setPlannerMode(payload.meta?.planner ?? "fallback");
     } catch {
       setMessages((currentMessages) => [

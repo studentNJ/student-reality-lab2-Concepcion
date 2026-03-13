@@ -20,12 +20,14 @@ loadWorkspaceEnv();
 
 export interface ChatApiRequest {
   prompt: string;
+  conversationId?: string;
   history?: Array<Pick<ChatMessage, "role" | "content">>;
 }
 
 export interface ChatApiResponse {
   message: ChatMessage;
   meta: {
+    conversationId?: string;
     planner: "model" | "fallback";
     intent: string;
   };

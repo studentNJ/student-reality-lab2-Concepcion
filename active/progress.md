@@ -16,14 +16,14 @@ done
 [x] Phase 4 Graph tool  
 [x] Phase 5 Chat UI  
 [x] Phase 6 AI orchestration  
-[ ] Phase 7 Persistence  
+[x] Phase 7 Persistence  
 [ ] Phase 8 Polish  
 
 ---
 
 ## Current Focus
 
-Phase 6 complete. Ready for Phase 7.
+Phase 7 complete. Ready for Phase 8.
 
 ---
 
@@ -50,9 +50,12 @@ Phase 6 complete. Ready for Phase 7.
 - Added an optional OpenAI-backed planner with a deterministic fallback planner when model credentials are not configured.
 - Validated the live model-planning path with the configured API key and fixed monorepo root env loading for the web app.
 - Fixed metro trend orchestration so natural metro names resolve to dataset metros and the trend tool resolves metro names to metro IDs.
+- Added a new `packages/db` Prisma workspace package with SQLite-backed conversation, message, and tool-call persistence models.
+- Wired the chat API to persist each user/assistant turn and return a stable `conversationId` so later requests stay attached to the same stored conversation.
+- Persisted assistant chart specs, planner metadata, and tool call summaries without leaking database logic into the UI or orchestration layer.
 
 ---
 
 ## Next Step
 
-Begin Phase 7 persistence using the now-validated chat and tool orchestration flow.
+Begin Phase 8 polish on top of the persisted chat flow.
