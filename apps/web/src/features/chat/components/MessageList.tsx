@@ -28,7 +28,9 @@ export function MessageList({ messages }: MessageListProps) {
           {(message.toolCalls ?? (message.toolCall ? [message.toolCall] : [])).map((toolCall, index) => (
             <ToolCallCard key={`${message.id}-${toolCall.toolName}-${index}`} toolCall={toolCall} />
           ))}
-          {message.chartSpec ? <ChartResultCard chartSpec={message.chartSpec} /> : null}
+          {(message.chartSpecs ?? (message.chartSpec ? [message.chartSpec] : [])).map((chartSpec, index) => (
+            <ChartResultCard chartSpec={chartSpec} key={`${message.id}-chart-${chartSpec.title}-${index}`} />
+          ))}
         </div>
       ))}
     </section>

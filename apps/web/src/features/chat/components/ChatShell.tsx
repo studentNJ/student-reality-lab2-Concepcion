@@ -58,7 +58,9 @@ export function ChatShell() {
     const toolCalls = message.toolCalls ?? (message.toolCall ? [message.toolCall] : []);
     return count + toolCalls.filter((toolCall) => toolCall.status === "success").length;
   }, 0);
-  const chartCount = messages.filter((message) => message.chartSpec).length;
+  const chartCount = messages.reduce((count, message) => {
+    return count + (message.chartSpecs?.length ?? (message.chartSpec ? 1 : 0));
+  }, 0);
   const hasErrors = messages.some((message) => {
     const toolCalls = message.toolCalls ?? (message.toolCall ? [message.toolCall] : []);
     return message.state === "error" || toolCalls.some((toolCall) => toolCall.status === "error");
@@ -74,7 +76,7 @@ export function ChatShell() {
 
     setMessages((currentMessages) => [...currentMessages, userMessage]);
     setIsPending(true);
-  setPendingContent(buildPendingContent(prompt));
+    setPendingContent(buildPendingContent(prompt));
 
     try {
       const response = await fetch("/api/chat", {

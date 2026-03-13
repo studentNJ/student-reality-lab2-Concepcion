@@ -15,4 +15,5 @@ export interface ChatMessage {
   toolCall?: ToolCallSummary;
   toolCalls?: ToolCallSummary[];
   chartSpec?: ChartSpec;
+  chartSpecs?: ChartSpec[];
 }

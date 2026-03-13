@@ -45,7 +45,8 @@ interface PlanBase {
 
 interface MetroTrendPlan extends PlanBase {
   intent: "metro_trend_chart";
-  metro: string | null;
+  metro?: string | null;
+  metros?: string[];
   startYear?: number;
   endYear?: number;
 }
@@ -141,28 +142,44 @@ function getMetroAliases(metro: string): string[] {
   return Array.from(new Set([metro.toLowerCase(), ...parts]));
 }
 
-function resolveMetro(prompt: string, metros: string[]): string | null {
+function resolveMetros(prompt: string, metros: string[]): string[] {
   const normalizedPrompt = normalizePrompt(prompt);
-
-  let bestMatch: { metro: string; score: number } | null = null;
+  const matches: Array<{ metro: string; position: number; score: number }> = [];
 
   for (const metro of metros) {
     const aliases = getMetroAliases(metro);
+    let bestMatch: { metro: string; position: number; score: number } | null = null;
 
     for (const alias of aliases) {
-      if (!normalizedPrompt.includes(alias)) {
+      const position = normalizedPrompt.indexOf(alias);
+
+      if (position === -1) {
         continue;
       }
 
       const score = alias.length;
 
-      if (!bestMatch || score > bestMatch.score) {
-        bestMatch = { metro, score };
+      if (
+        !bestMatch
+        || position < bestMatch.position
+        || (position === bestMatch.position && score > bestMatch.score)
+      ) {
+        bestMatch = { metro, position, score };
       }
+    }
+
+    if (bestMatch) {
+      matches.push(bestMatch);
     }
   }
 
-  return bestMatch?.metro ?? null;
+  return matches
+    .sort((left, right) => left.position - right.position || right.score - left.score)
+    .map((match) => match.metro);
+}
+
+function resolveMetro(prompt: string, metros: string[]): string | null {
+  return resolveMetros(prompt, metros)[0] ?? null;
 }
 
 function latestYear(years: number[]): number | undefined {
@@ -182,7 +199,8 @@ function defaultTrendWindow(years: number[]): { startYear: number; endYear: numb
 
 function buildFallbackPlan(prompt: string, context: PlanningContext): OrchestrationPlan {
   const normalizedPrompt = normalizePrompt(prompt);
-  const matchedMetro = resolveMetro(prompt, context.metros);
+  const matchedMetros = resolveMetros(prompt, context.metros);
+  const matchedMetro = matchedMetros[0] ?? null;
   const requestedYear = extractYear(prompt, context.years);
 
   if (normalizedPrompt.includes("source") || normalizedPrompt.includes("dataset") || normalizedPrompt.includes("data status")) {
@@ -206,7 +224,7 @@ function buildFallbackPlan(prompt: string, context: PlanningContext): Orchestrat
     const window = defaultTrendWindow(context.years);
     return {
       intent: "metro_trend_chart",
-      metro: matchedMetro,
+      metros: matchedMetros,
       startYear: requestedYear ?? window?.startYear,
       endYear: window?.endYear,
     };
@@ -247,10 +265,11 @@ async function planWithModel(prompt: string, history: ChatApiRequest["history"],
         "Return only JSON.",
         "Choose one intent from: metro_trend_chart, metrics_snapshot, affordability, data_source_status, help.",
         "If the user asks for a chart or trend, prefer metro_trend_chart when a metro is present; otherwise use metrics_snapshot.",
+        "If the user asks for multiple metros, return metros as an ordered array matching the request order.",
         "Only use metro names from this list:",
         context.metros.join(", "),
         `Supported years: ${context.years.join(", ")}`,
-        "JSON shape: { intent, assistantMessage?, metro?, startYear?, endYear?, year?, metric?, wantsChart?, annualIncome?, monthlyDebt?, targetMetro?, roommates?, householdSize?, useEstimatedAfterTaxIncome? }",
+        "JSON shape: { intent, assistantMessage?, metro?, metros?, startYear?, endYear?, year?, metric?, wantsChart?, annualIncome?, monthlyDebt?, targetMetro?, roommates?, householdSize?, useEstimatedAfterTaxIncome? }",
       ].join("\n"),
     },
     {
@@ -295,6 +314,22 @@ async function planRequest(request: ChatApiRequest, context: PlanningContext): P
   const modelPlan = await planWithModel(request.prompt, request.history, context);
 
   if (modelPlan) {
+    if (modelPlan.intent === "metro_trend_chart") {
+      const normalizedMetros = modelPlan.metros?.length
+        ? modelPlan.metros
+        : modelPlan.metro
+          ? [modelPlan.metro]
+          : resolveMetros(request.prompt, context.metros);
+
+      return {
+        planner: "model",
+        plan: {
+          ...modelPlan,
+          metros: normalizedMetros,
+        },
+      };
+    }
+
     return { planner: "model", plan: modelPlan };
   }
 
@@ -308,14 +343,18 @@ function createAssistantMessage(input: {
   content: string;
   state?: ChatMessage["state"];
   chartSpec?: ChartSpec;
+  chartSpecs?: ChartSpec[];
   toolCalls?: ToolCallSummary[];
 }): ChatMessage {
+  const chartSpecs = input.chartSpecs ?? (input.chartSpec ? [input.chartSpec] : undefined);
+
   return {
     id: `assistant-${crypto.randomUUID()}`,
     role: "assistant",
     state: input.state ?? "complete",
     content: input.content,
-    ...(input.chartSpec ? { chartSpec: input.chartSpec } : {}),
+    ...(chartSpecs?.length === 1 ? { chartSpec: chartSpecs[0] } : {}),
+    ...(chartSpecs?.length ? { chartSpecs } : {}),
     ...(input.toolCalls ? { toolCalls: input.toolCalls } : {}),
   };
 }
@@ -324,6 +363,18 @@ function buildTrendSummary(metro: string, chartCreated: boolean): string {
   return chartCreated
     ? `Here is the rent burden trend for ${metro}, including a chart spec generated from live tool output.`
     : `I loaded the rent burden trend for ${metro}.`;
+}
+
+function formatSeriesList(values: string[]): string {
+  if (values.length <= 1) {
+    return values[0] ?? "";
+  }
+
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+
+  return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
 }
 
 async function executePlan(plan: OrchestrationPlan, context: PlanningContext): Promise<ChatMessage> {
@@ -415,46 +466,74 @@ async function executePlan(plan: OrchestrationPlan, context: PlanningContext): P
       });
     }
     case "metro_trend_chart": {
-      const metro = plan.metro ?? resolveMetro(plan.assistantMessage ?? "", context.metros);
+      const metros = plan.metros?.length ? plan.metros : plan.metro ? [plan.metro] : [];
       const window = defaultTrendWindow(context.years);
       const startYear = plan.startYear ?? window?.startYear;
       const endYear = plan.endYear ?? window?.endYear;
 
-      if (!metro || startYear === undefined || endYear === undefined) {
+      if (metros.length === 0 || startYear === undefined || endYear === undefined) {
         return createAssistantMessage({
           state: "error",
           content: "I need a metro and a supported year range to build a trend chart. Try: Show a rent burden trend chart for Chicago.",
         });
       }
 
-      const trend = runTool("get_metro_trend", { metro, startYear, endYear });
+      const chartSpecs: ChartSpec[] = [];
+      const toolCalls: ToolCallSummary[] = [];
+      const completedMetros: string[] = [];
+      const failedMetros: string[] = [];
 
-      if (!trend.ok) {
+      for (const metro of metros) {
+        const trend = runTool("get_metro_trend", { metro, startYear, endYear });
+        toolCalls.push(trend.summary);
+
+        if (!trend.ok) {
+          failedMetros.push(metro);
+          continue;
+        }
+
+        const graph = runTool("create_graph", {
+          inputMode: "helper",
+          graphType: "metro_trend_line",
+          sourceTool: "get_metro_trend",
+          data: trend.result.data,
+          metric: "rent_burden_percent",
+          highlightThreshold: 30,
+          formattingHints: {
+            showLegend: false,
+            showGrid: true,
+          },
+        });
+        toolCalls.push(graph.summary);
+
+        if (!graph.ok) {
+          failedMetros.push(metro);
+          continue;
+        }
+
+        chartSpecs.push(graph.result.data);
+        completedMetros.push(trend.result.data.metro);
+      }
+
+      if (chartSpecs.length === 0) {
         return createAssistantMessage({
           state: "error",
-          content: `I could not load the trend for ${metro}.`,
-          toolCalls: [trend.summary],
+          content: `I could not load the trend charts for ${formatSeriesList(metros)}.`,
+          toolCalls,
         });
       }
 
-      const graph = runTool("create_graph", {
-        inputMode: "helper",
-        graphType: "metro_trend_line",
-        sourceTool: "get_metro_trend",
-        data: trend.result.data,
-        metric: "rent_burden_percent",
-        highlightThreshold: 30,
-        formattingHints: {
-          showLegend: false,
-          showGrid: true,
-        },
-      });
+      const summary = failedMetros.length > 0
+        ? `Here are the rent burden trend charts for ${formatSeriesList(completedMetros)}. I could not finish ${formatSeriesList(failedMetros)}.`
+        : chartSpecs.length === 1
+          ? buildTrendSummary(completedMetros[0] ?? metros[0], true)
+          : `Here are the rent burden trend charts for ${formatSeriesList(completedMetros)}.`;
 
       return createAssistantMessage({
-        state: graph.ok ? "complete" : "error",
-        content: buildTrendSummary(metro, graph.ok),
-        chartSpec: graph.ok ? graph.result.data : undefined,
-        toolCalls: [trend.summary, graph.summary],
+        state: failedMetros.length > 0 ? "error" : "complete",
+        content: summary,
+        chartSpecs,
+        toolCalls,
       });
     }
     case "help":

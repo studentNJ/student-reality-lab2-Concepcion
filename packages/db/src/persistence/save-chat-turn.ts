@@ -15,6 +15,7 @@ interface PersistedAssistantMessage {
   content: string;
   state?: "complete" | "loading" | "error";
   chartSpec?: unknown;
+  chartSpecs?: unknown[];
   toolCall?: PersistedToolCall;
   toolCalls?: PersistedToolCall[];
 }
@@ -36,6 +37,10 @@ function serializeToolInput(input: PersistedToolCall["input"]): string | null {
 }
 
 function serializeChartSpec(message: PersistedAssistantMessage): string | null {
+  if (message.chartSpecs && message.chartSpecs.length > 0) {
+    return JSON.stringify(message.chartSpecs);
+  }
+
   return message.chartSpec ? JSON.stringify(message.chartSpec) : null;
 }
 

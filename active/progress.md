@@ -58,6 +58,8 @@ Phase 8 complete. Polish and documentation pass landed.
 - Added extra domain tests covering same-year aggregation, injected trend rows, roommate validation, and rounded affordability outputs.
 - Added a dedicated MCP tool pattern document to describe the expected implementation and registration flow.
 - Added a safe `clean:web-build` workflow after tracing a false-positive persistence alarm back to Turbopack cache writes caused by deleting `.next` during a running dev server.
+- Completed the follow-up fix for multi-metro trend requests so one assistant response can render multiple chart cards in requested order.
+- Completed chart readability hardening with adaptive y-axis scaling and Playwright coverage for the chart UI.
 
 ---
 

@@ -19,9 +19,12 @@
     "test": "npm run test:domain && npm run test:shared && npm run test:mcp",
     "test:domain": "vitest run tests/domain --passWithNoTests",
     "test:shared": "vitest run tests/shared --passWithNoTests",
-    "test:mcp": "vitest run tests/mcp-server --passWithNoTests"
+    "test:mcp": "vitest run tests/mcp-server --passWithNoTests",
+    "test:web": "vitest run tests/web --passWithNoTests",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/node": "^24.3.0",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
