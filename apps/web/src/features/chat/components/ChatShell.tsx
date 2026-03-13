@@ -40,6 +40,7 @@ function buildPendingContent(prompt: string): string {
 }
 
 export function ChatShell() {
+  const showToolCards = process.env.NODE_ENV !== "production";
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isPending, setIsPending] = useState(false);
   const [pendingContent, setPendingContent] = useState("");
@@ -140,10 +141,12 @@ export function ChatShell() {
             <span>Mode</span>
             <strong>{plannerMode === "live-api" ? "Live API" : plannerMode === "model" ? "Model plan" : "Fallback plan"}</strong>
           </div>
-          <div className="system-stat">
-            <span>Tool cards</span>
-            <strong>{successfulToolCalls}</strong>
-          </div>
+          {showToolCards ? (
+            <div className="system-stat">
+              <span>Tool cards</span>
+              <strong>{successfulToolCalls}</strong>
+            </div>
+          ) : null}
           <div className="system-stat">
             <span>Charts</span>
             <strong>{chartCount}</strong>

@@ -8,6 +8,8 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages }: MessageListProps) {
+  const showToolCards = process.env.NODE_ENV !== "production";
+
   if (messages.length === 0) {
     return (
       <section className="message-list" aria-label="Conversation">
@@ -25,9 +27,11 @@ export function MessageList({ messages }: MessageListProps) {
       {messages.map((message) => (
         <div className="message-stack" key={message.id}>
           <MessageBubble message={message} />
-          {(message.toolCalls ?? (message.toolCall ? [message.toolCall] : [])).map((toolCall, index) => (
-            <ToolCallCard key={`${message.id}-${toolCall.toolName}-${index}`} toolCall={toolCall} />
-          ))}
+          {showToolCards
+            ? (message.toolCalls ?? (message.toolCall ? [message.toolCall] : [])).map((toolCall, index) => (
+                <ToolCallCard key={`${message.id}-${toolCall.toolName}-${index}`} toolCall={toolCall} />
+              ))
+            : null}
           {(message.chartSpecs ?? (message.chartSpec ? [message.chartSpec] : [])).map((chartSpec, index) => (
             <ChartResultCard chartSpec={chartSpec} key={`${message.id}-chart-${chartSpec.title}-${index}`} />
           ))}

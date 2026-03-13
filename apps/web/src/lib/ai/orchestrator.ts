@@ -91,6 +91,18 @@ interface OpenAiResponse {
   }>;
 }
 
+const snapshotMetricAliases = {
+  rent_burden: "rent_burden_percent",
+  rent_burden_percent: "rent_burden_percent",
+  burden: "rent_burden_percent",
+  median_gross_rent: "median_gross_rent",
+  gross_rent: "median_gross_rent",
+  rent: "median_gross_rent",
+  median_monthly_income: "median_monthly_income",
+  monthly_income: "median_monthly_income",
+  income: "median_monthly_income",
+} as const;
+
 function normalizePrompt(input: string): string {
   return input.toLowerCase();
 }
@@ -195,6 +207,35 @@ function defaultTrendWindow(years: number[]): { startYear: number; endYear: numb
 
   const startYear = years[Math.max(0, years.length - 5)] ?? endYear;
   return { startYear, endYear };
+}
+
+function normalizeSnapshotMetric(metric: unknown): MetricsSnapshotPlan["metric"] | undefined {
+  if (typeof metric !== "string") {
+    return undefined;
+  }
+
+  const normalizedMetric = metric.trim().toLowerCase().replaceAll(/[\s-]+/g, "_");
+  return snapshotMetricAliases[normalizedMetric as keyof typeof snapshotMetricAliases];
+}
+
+function normalizePlan(plan: OrchestrationPlan, context: PlanningContext): OrchestrationPlan {
+  switch (plan.intent) {
+    case "metrics_snapshot": {
+      return {
+        ...plan,
+        metric: normalizeSnapshotMetric(plan.metric) ?? "rent_burden_percent",
+        year: typeof plan.year === "number" && context.years.includes(plan.year) ? plan.year : latestYear(context.years),
+      };
+    }
+    case "metro_trend_chart": {
+      return {
+        ...plan,
+        metros: plan.metros?.filter((metro): metro is string => typeof metro === "string" && metro.length > 0),
+      };
+    }
+    default:
+      return plan;
+  }
 }
 
 function buildFallbackPlan(prompt: string, context: PlanningContext): OrchestrationPlan {
@@ -323,14 +364,14 @@ async function planRequest(request: ChatApiRequest, context: PlanningContext): P
 
       return {
         planner: "model",
-        plan: {
+        plan: normalizePlan({
           ...modelPlan,
           metros: normalizedMetros,
-        },
+        }, context),
       };
     }
 
-    return { planner: "model", plan: modelPlan };
+    return { planner: "model", plan: normalizePlan(modelPlan, context) };
   }
 
   return {

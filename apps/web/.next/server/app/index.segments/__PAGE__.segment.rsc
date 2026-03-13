@@ -1,6 +1,6 @@
 1:"$Sreact.fragment"
-2:I[7255,["/_next/static/chunks/ef0042d29970e074.js"],"ChatShell"]
+2:I[7255,["/_next/static/chunks/8bc1846c657090d9.js"],"ChatShell"]
 3:I[97367,["/_next/static/chunks/2f236954d6a65e12.js"],"OutletBoundary"]
 4:"$Sreact.suspense"
-0:{"buildId":"_uk0eJmi_DBr3zHsz884Y","rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/_next/static/chunks/ef0042d29970e074.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"boM9QrIAPZ8NdWQPFPZ0r","rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/_next/static/chunks/8bc1846c657090d9.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"loading":null,"isPartial":false}
 5:null
