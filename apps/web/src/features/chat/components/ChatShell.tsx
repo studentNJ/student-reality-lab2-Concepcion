@@ -82,7 +82,7 @@ export function ChatShell() {
       };
 
       setMessages((currentMessages) => [...currentMessages, assistantMessage]);
-      setConversationId(payload.meta?.conversationId ?? null);
+      setConversationId((currentConversationId) => payload.meta?.conversationId ?? currentConversationId);
       setPlannerMode(payload.meta?.planner ?? "fallback");
     } catch {
       setMessages((currentMessages) => [

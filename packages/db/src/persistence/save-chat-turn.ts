@@ -53,6 +53,13 @@ export async function saveChatTurn(input: SaveChatTurnInput): Promise<SaveChatTu
       await transaction.conversation.create({
         data: { id: conversationId },
       });
+    } else {
+      await transaction.conversation.update({
+        where: { id: conversationId },
+        data: {
+          updatedAt: new Date(),
+        },
+      });
     }
 
     const messageCount = await transaction.message.count({

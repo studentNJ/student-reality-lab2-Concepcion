@@ -37,21 +37,27 @@ export async function POST(request: Request) {
       throw new Error("Chat orchestration returned a non-assistant message.");
     }
 
-    const assistantMessage = response.message;
+    let persistedConversationId = requestedConversationId;
 
-    const persistence = await saveChatTurn({
-      conversationId: requestedConversationId,
-      userPrompt: body.prompt,
-      assistantMessage,
-      planner: response.meta.planner,
-      intent: response.meta.intent,
-    });
+    try {
+      const persistence = await saveChatTurn({
+        conversationId: requestedConversationId,
+        userPrompt: body.prompt,
+        assistantMessage: response.message,
+        planner: response.meta.planner,
+        intent: response.meta.intent,
+      });
+
+      persistedConversationId = persistence.conversationId;
+    } catch (persistenceError) {
+      console.error("Chat persistence failed", persistenceError);
+    }
 
     return NextResponse.json({
       ...response,
       meta: {
         ...response.meta,
-        conversationId: persistence.conversationId,
+        conversationId: persistedConversationId,
       },
     });
   } catch (error) {
