@@ -349,6 +349,10 @@ body {
   overflow: visible;
 }
 
+.chart-svg-shell {
+  position: relative;
+}
+
 .chart-grid-line {
   stroke: rgba(20, 20, 20, 0.14);
   stroke-width: 1;
@@ -369,17 +373,44 @@ body {
 }
 
 .chart-threshold-label {
-  fill: var(--brick);
-  font-size: 10px;
+  position: absolute;
+  right: 0.5rem;
+  padding: 0 0.2rem;
+  background: rgba(248, 241, 231, 0.72);
+  color: var(--brick);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.68rem;
   letter-spacing: 0.03em;
+  line-height: 1.2;
 }
 
 .chart-ticks {
-  display: grid;
-  gap: 0.4rem;
+  position: relative;
+  height: 1.1rem;
   font-family: var(--font-mono), monospace;
   font-size: 0.72rem;
   color: rgba(20, 20, 20, 0.64);
+}
+
+.chart-tick {
+  position: absolute;
+  bottom: 0;
+  white-space: nowrap;
+}
+
+.chart-tick-start {
+  transform: translateX(0);
+  text-align: left;
+}
+
+.chart-tick-center {
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.chart-tick-end {
+  transform: translateX(-100%);
+  text-align: right;
 }
 
 .chart-preview-bar {
