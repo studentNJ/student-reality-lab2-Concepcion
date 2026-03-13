@@ -11,7 +11,7 @@ done
 ## Phases
 
 [~] Phase 1 Domain extraction  
-[ ] Phase 2 Shared schemas  
+[~] Phase 2 Shared schemas  
 [ ] Phase 3 MCP server  
 [ ] Phase 4 Graph tool  
 [ ] Phase 5 Chat UI  
@@ -23,7 +23,7 @@ done
 
 ## Current Focus
 
-Phase 1 Domain extraction.
+Phase 2 Shared schemas.
 
 ---
 
@@ -34,9 +34,11 @@ Phase 1 Domain extraction.
 - Added local sample data under `data/processed` for v2-only development.
 - Added domain tests covering the extracted behavior from the reference implementation.
 - Verified with `npm run typecheck` and `npm test`.
+- Created `packages/shared` with Zod schemas for metro, metrics, trend, affordability, and graph contracts.
+- Added shared schema tests and compatibility checks against live domain outputs.
 
 ---
 
 ## Next Step
 
-Refine the domain export surface if needed, then begin Phase 1 compatibility wiring for downstream packages and document updates.
+Use the shared schemas inside Phase 3 MCP tool implementations so tool inputs and outputs are validated through one package.

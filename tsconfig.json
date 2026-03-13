@@ -12,6 +12,9 @@
     "paths": {
       "@student-reality-lab/domain": [
         "packages/domain/src/index.ts"
+      ],
+      "@student-reality-lab/shared": [
+        "packages/shared/src/index.ts"
       ]
     },
     "types": [
