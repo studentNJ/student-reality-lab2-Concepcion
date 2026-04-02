@@ -29,7 +29,27 @@ export const metroTrendResponseDataSchema = z.object({
   series: z.array(trendSeriesPointSchema),
 });
 
+export const compareMetrosRequestSchema = z.object({
+  metros: z.array(z.string().min(1)).min(2),
+  startYear: yearSchema,
+  endYear: yearSchema,
+  metric: z.enum(["rent_burden_percent"]).default("rent_burden_percent"),
+}).refine((input) => input.startYear <= input.endYear, {
+  message: "startYear must be less than or equal to endYear",
+  path: ["endYear"],
+});
+
+export const compareMetrosResponseDataSchema = z.object({
+  metros: z.array(z.string().min(1)).min(2),
+  startYear: yearSchema,
+  endYear: yearSchema,
+  metric: z.enum(["rent_burden_percent"]),
+  trends: z.array(metroTrendResponseDataSchema).min(2),
+});
+
 export type TrendPoint = z.infer<typeof trendPointSchema>;
 export type TrendSeriesPoint = z.infer<typeof trendSeriesPointSchema>;
 export type MetroTrendRequest = z.infer<typeof metroTrendRequestSchema>;
 export type MetroTrendResponseData = z.infer<typeof metroTrendResponseDataSchema>;
+export type CompareMetrosRequest = z.infer<typeof compareMetrosRequestSchema>;
+export type CompareMetrosResponseData = z.infer<typeof compareMetrosResponseDataSchema>;

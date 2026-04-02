@@ -2,10 +2,19 @@ export { graphTypes } from "./constants/graph-types.js";
 
 export {
   affordabilityOptionsSchema,
+  affordabilityScenarioRequestSchema,
   affordabilityResultSchema,
   calculateAffordabilityRequestSchema,
   calculateAffordabilityResponseDataSchema,
+  compareAffordabilityScenariosRequestSchema,
+  compareAffordabilityScenariosResponseDataSchema,
 } from "./schemas/affordability.js";
+export {
+  conversationHistoryRequestSchema,
+  conversationHistoryResponseDataSchema,
+  persistedChatMessageSchema,
+  persistedToolCallSchema,
+} from "./schemas/chat.js";
 export {
   affordabilityScenarioGraphHelperInputSchema,
   annotationSpecSchema,
@@ -43,6 +52,8 @@ export {
   yearSchema,
 } from "./schemas/metrics.js";
 export {
+  compareMetrosRequestSchema,
+  compareMetrosResponseDataSchema,
   metroTrendRequestSchema,
   metroTrendResponseDataSchema,
   trendPointSchema,
@@ -52,10 +63,19 @@ export {
 export type { GraphType as GraphTypeConstant } from "./constants/graph-types.js";
 export type {
   AffordabilityOptions,
+  AffordabilityScenarioRequest,
   AffordabilityResult,
   CalculateAffordabilityRequest,
   CalculateAffordabilityResponseData,
+  CompareAffordabilityScenariosRequest,
+  CompareAffordabilityScenariosResponseData,
 } from "./schemas/affordability.js";
+export type {
+  ConversationHistoryRequest,
+  ConversationHistoryResponseData,
+  PersistedChatMessage,
+  PersistedToolCall,
+} from "./schemas/chat.js";
 export type {
   AffordabilityScenarioGraphHelperInput,
   AnnotationSpec,
@@ -89,6 +109,8 @@ export type {
   Year,
 } from "./schemas/metrics.js";
 export type {
+  CompareMetrosRequest,
+  CompareMetrosResponseData,
   MetroTrendRequest,
   MetroTrendResponseData,
   TrendPoint,

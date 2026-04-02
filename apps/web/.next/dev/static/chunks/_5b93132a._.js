@@ -914,6 +914,7 @@ __turbopack_context__.s([
     "MessageList",
     ()=>MessageList
 ]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$features$2f$chat$2f$components$2f$ChartResultCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/web/src/features/chat/components/ChartResultCard.tsx [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$features$2f$chat$2f$components$2f$MessageBubble$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/web/src/features/chat/components/MessageBubble.tsx [app-client] (ecmascript)");
@@ -923,6 +924,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$featur
 ;
 ;
 function MessageList({ messages }) {
+    const showToolCards = ("TURBOPACK compile-time value", "development") !== "production";
     if (messages.length === 0) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
             className: "message-list",
@@ -935,32 +937,32 @@ function MessageList({ messages }) {
                         children: "Conversation"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                        lineNumber: 15,
+                        lineNumber: 17,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
                         children: "Start with a metro, a scenario, or a chart request."
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                        lineNumber: 16,
+                        lineNumber: 18,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: "The Phase 5 interface is ready to display assistant text, tool results, and chart specs in one stream."
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                        lineNumber: 17,
+                        lineNumber: 19,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                lineNumber: 14,
+                lineNumber: 16,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-            lineNumber: 13,
+            lineNumber: 15,
             columnNumber: 7
         }, this);
     }
@@ -974,36 +976,36 @@ function MessageList({ messages }) {
                         message: message
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                        lineNumber: 27,
+                        lineNumber: 29,
                         columnNumber: 11
                     }, this),
-                    (message.toolCalls ?? (message.toolCall ? [
+                    ("TURBOPACK compile-time truthy", 1) ? (message.toolCalls ?? (message.toolCall ? [
                         message.toolCall
                     ] : [])).map((toolCall, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$features$2f$chat$2f$components$2f$ToolCallCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ToolCallCard"], {
                             toolCall: toolCall
                         }, `${message.id}-${toolCall.toolName}-${index}`, false, {
                             fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                            lineNumber: 29,
-                            columnNumber: 13
-                        }, this)),
+                            lineNumber: 32,
+                            columnNumber: 17
+                        }, this)) : "TURBOPACK unreachable",
                     (message.chartSpecs ?? (message.chartSpec ? [
                         message.chartSpec
                     ] : [])).map((chartSpec, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$features$2f$chat$2f$components$2f$ChartResultCard$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["ChartResultCard"], {
                             chartSpec: chartSpec
                         }, `${message.id}-chart-${chartSpec.title}-${index}`, false, {
                             fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                            lineNumber: 32,
+                            lineNumber: 36,
                             columnNumber: 13
                         }, this))
                 ]
             }, message.id, true, {
                 fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-                lineNumber: 26,
+                lineNumber: 28,
                 columnNumber: 9
             }, this))
     }, void 0, false, {
         fileName: "[project]/apps/web/src/features/chat/components/MessageList.tsx",
-        lineNumber: 24,
+        lineNumber: 26,
         columnNumber: 5
     }, this);
 }
@@ -1127,6 +1129,7 @@ __turbopack_context__.s([
     "ChatShell",
     ()=>ChatShell
 ]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$features$2f$chat$2f$components$2f$MessageList$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/apps/web/src/features/chat/components/MessageList.tsx [app-client] (ecmascript)");
@@ -1166,6 +1169,7 @@ function buildPendingContent(prompt) {
 }
 function ChatShell() {
     _s();
+    const showToolCards = ("TURBOPACK compile-time value", "development") !== "production";
     const [messages, setMessages] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(initialMessages);
     const [isPending, setIsPending] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [pendingContent, setPendingContent] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
@@ -1267,14 +1271,14 @@ function ChatShell() {
                         children: "Student Reality Lab v2"
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                        lineNumber: 133,
+                        lineNumber: 134,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
                         children: "Chat-first housing analysis with tool and chart results inline."
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                        lineNumber: 134,
+                        lineNumber: 135,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1282,7 +1286,7 @@ function ChatShell() {
                         children: "The UI is now structured around assistant messages, MCP tool cards, and graph specs so Phase 6 can plug in orchestration without changing the presentation contract."
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                        lineNumber: 135,
+                        lineNumber: 136,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1296,45 +1300,45 @@ function ChatShell() {
                                         children: "Mode"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 140,
+                                        lineNumber: 141,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                         children: plannerMode === "live-api" ? "Live API" : plannerMode === "model" ? "Model plan" : "Fallback plan"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 141,
+                                        lineNumber: 142,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                lineNumber: 139,
+                                lineNumber: 140,
                                 columnNumber: 11
                             }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            ("TURBOPACK compile-time truthy", 1) ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "system-stat",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Tool cards"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 144,
-                                        columnNumber: 13
+                                        lineNumber: 146,
+                                        columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                         children: successfulToolCalls
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 145,
-                                        columnNumber: 13
+                                        lineNumber: 147,
+                                        columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                lineNumber: 143,
-                                columnNumber: 11
-                            }, this),
+                                lineNumber: 145,
+                                columnNumber: 13
+                            }, this) : "TURBOPACK unreachable",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "system-stat",
                                 children: [
@@ -1342,20 +1346,20 @@ function ChatShell() {
                                         children: "Charts"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 148,
+                                        lineNumber: 151,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                         children: chartCount
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 149,
+                                        lineNumber: 152,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                lineNumber: 147,
+                                lineNumber: 150,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1365,32 +1369,32 @@ function ChatShell() {
                                         children: "Status"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 152,
+                                        lineNumber: 155,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                         children: hasErrors ? "Needs review" : isPending ? "Working" : "Ready"
                                     }, void 0, false, {
                                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                        lineNumber: 153,
+                                        lineNumber: 156,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                                lineNumber: 151,
+                                lineNumber: 154,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                        lineNumber: 138,
+                        lineNumber: 139,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                lineNumber: 132,
+                lineNumber: 133,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -1400,7 +1404,7 @@ function ChatShell() {
                         messages: visibleMessages
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                        lineNumber: 158,
+                        lineNumber: 161,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$apps$2f$web$2f$src$2f$features$2f$chat$2f$components$2f$PromptBox$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["PromptBox"], {
@@ -1409,19 +1413,19 @@ function ChatShell() {
                         suggestions: starterPrompts
                     }, void 0, false, {
                         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                        lineNumber: 159,
+                        lineNumber: 162,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-                lineNumber: 157,
+                lineNumber: 160,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/apps/web/src/features/chat/components/ChatShell.tsx",
-        lineNumber: 131,
+        lineNumber: 132,
         columnNumber: 5
     }, this);
 }

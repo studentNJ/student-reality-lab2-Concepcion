@@ -3,12 +3,16 @@ import { createRegisteredServer } from "./server/register-tools.js";
 
 export { createRegisteredServer, phase3ToolNames, registerTools } from "./server/register-tools.js";
 export { calculateAffordabilityTool } from "./tools/calculate-affordability.js";
+export { compareAffordabilityScenariosTool } from "./tools/compare-affordability-scenarios.js";
+export { compareMetrosTool } from "./tools/compare-metros.js";
 export { createGraphTool } from "./tools/create-graph.js";
 export { getDataSourceStatusTool } from "./tools/get-data-source-status.js";
+export { getMetricsByRangeTool } from "./tools/get-metrics-by-range.js";
 export { getMetricsSnapshotTool } from "./tools/get-metrics-snapshot.js";
 export { getMetrosTool } from "./tools/get-metros.js";
 export { getMetroTrendTool } from "./tools/get-trend.js";
 export { getAvailableYearsTool } from "./tools/get-years.js";
+export { retrieveConversationHistoryTool } from "./tools/retrieve-conversation-history.js";
 export type { ToolFailure, ToolResult, ToolSuccess } from "./tools/tool-result.js";
 
 export async function startMcpServer(): Promise<void> {

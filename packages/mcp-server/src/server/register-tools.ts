@@ -1,22 +1,30 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { calculateAffordabilityTool } from "../tools/calculate-affordability.js";
+import { compareAffordabilityScenariosTool } from "../tools/compare-affordability-scenarios.js";
+import { compareMetrosTool } from "../tools/compare-metros.js";
 import { createGraphTool } from "../tools/create-graph.js";
 import { getDataSourceStatusTool } from "../tools/get-data-source-status.js";
+import { getMetricsByRangeTool } from "../tools/get-metrics-by-range.js";
 import { getMetricsSnapshotTool } from "../tools/get-metrics-snapshot.js";
 import { getMetrosTool } from "../tools/get-metros.js";
 import { getMetroTrendTool } from "../tools/get-trend.js";
 import { getAvailableYearsTool } from "../tools/get-years.js";
+import { retrieveConversationHistoryTool } from "../tools/retrieve-conversation-history.js";
 import { toMcpToolResponse } from "../tools/tool-result.js";
 
 export const phase3ToolNames = [
   "get_available_years",
   "get_metros",
   "get_metrics_snapshot",
+  "get_metrics_by_range",
   "get_metro_trend",
+  "compare_metros",
   "calculate_affordability",
+  "compare_affordability_scenarios",
   "get_data_source_status",
   "create_graph",
+  "retrieve_conversation_history",
 ] as const;
 
 const noInputShape = {};
@@ -25,10 +33,22 @@ const metricsSnapshotShape = {
   year: z.number().int(),
 };
 
+const metricsRangeShape = {
+  startYear: z.number().int(),
+  endYear: z.number().int(),
+};
+
 const metroTrendShape = {
   metro: z.string().min(1),
   startYear: z.number().int(),
   endYear: z.number().int(),
+};
+
+const compareMetrosShape = {
+  metros: z.array(z.string().min(1)).min(2),
+  startYear: z.number().int(),
+  endYear: z.number().int(),
+  metric: z.enum(["rent_burden_percent"]).optional(),
 };
 
 const calculateAffordabilityShape = {
@@ -38,6 +58,24 @@ const calculateAffordabilityShape = {
   roommates: z.number().int().min(0).optional(),
   targetMetro: z.string().min(1).optional(),
   useEstimatedAfterTaxIncome: z.boolean().optional(),
+};
+
+const compareAffordabilityScenariosShape = {
+  annualIncome: z.number().positive(),
+  targetMetro: z.string().min(1).optional(),
+  scenarios: z.array(z.object({
+    label: z.string().min(1),
+    monthlyDebt: z.number().min(0).optional(),
+    householdSize: z.number().int().positive().optional(),
+    roommates: z.number().int().min(0).optional(),
+    useEstimatedAfterTaxIncome: z.boolean().optional(),
+  })).min(2),
+};
+
+const conversationHistoryShape = {
+  conversationId: z.string().min(1),
+  limit: z.number().int().positive().optional(),
+  includeToolCalls: z.boolean().optional(),
 };
 
 const graphAxisShape = z.object({
@@ -134,6 +172,13 @@ export function registerTools(server: McpServer): McpServer {
   );
 
   server.tool(
+    "get_metrics_by_range",
+    "Return aggregated metric data across a year range.",
+    metricsRangeShape,
+    async (input) => toMcpToolResponse(getMetricsByRangeTool(input)),
+  );
+
+  server.tool(
     "get_metro_trend",
     "Return trend data for a metro across a year range.",
     metroTrendShape,
@@ -141,10 +186,24 @@ export function registerTools(server: McpServer): McpServer {
   );
 
   server.tool(
+    "compare_metros",
+    "Return comparable trend data for two or more metros across the same year range.",
+    compareMetrosShape,
+    async (input) => toMcpToolResponse(compareMetrosTool(input)),
+  );
+
+  server.tool(
     "calculate_affordability",
     "Run affordability calculations based on user inputs.",
     calculateAffordabilityShape,
     async (input) => toMcpToolResponse(calculateAffordabilityTool(input)),
+  );
+
+  server.tool(
+    "compare_affordability_scenarios",
+    "Run multiple affordability scenarios for the same base income and optional metro target.",
+    compareAffordabilityScenariosShape,
+    async (input) => toMcpToolResponse(compareAffordabilityScenariosTool(input)),
   );
 
   server.tool(
@@ -159,6 +218,13 @@ export function registerTools(server: McpServer): McpServer {
     "Create structured chart specifications.",
     createGraphShape,
     async (input) => toMcpToolResponse(createGraphTool(input)),
+  );
+
+  server.tool(
+    "retrieve_conversation_history",
+    "Return persisted messages and optional tool calls for a conversation.",
+    conversationHistoryShape,
+    async (input) => toMcpToolResponse(await retrieveConversationHistoryTool(input)),
   );
 
   return server;

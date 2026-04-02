@@ -135,4 +135,40 @@ describe("create_graph tool", () => {
       expect(result.meta?.inputMode).toBe("helper");
     }
   });
+
+  it("accepts helper-mode metro comparison requests", () => {
+    const result = createGraphTool({
+      inputMode: "helper",
+      graphType: "metro_compare_line",
+      sourceTool: "get_metro_trend",
+      data: [
+        {
+          metro: "Chicago-Naperville-Elgin",
+          startYear: 2020,
+          endYear: 2024,
+          series: [
+            { year: 2020, value: 28.54 },
+            { year: 2021, value: 28.77 },
+          ],
+        },
+        {
+          metro: "Washington-Arlington-Alexandria",
+          startYear: 2020,
+          endYear: 2024,
+          series: [
+            { year: 2020, value: 33.84 },
+            { year: 2021, value: 34.25 },
+          ],
+        },
+      ],
+      metric: "rent_burden_percent",
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.chartType).toBe("metro_compare_line");
+      expect(result.data.series).toHaveLength(2);
+      expect(result.meta?.inputMode).toBe("helper");
+    }
+  });
 });

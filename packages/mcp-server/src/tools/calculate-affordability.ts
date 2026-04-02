@@ -3,6 +3,7 @@ import {
   classifyRisk,
   getEstimatedMonthlyIncome,
   getLatestRentByMetro,
+  getMetros,
 } from "@student-reality-lab/domain";
 import {
   calculateAffordabilityRequestSchema,
@@ -21,6 +22,16 @@ function roundToTwo(value: number): number {
   return Number(value.toFixed(2));
 }
 
+function getMetroAliases(metroName: string): string[] {
+  const parts = metroName
+    .toLowerCase()
+    .split(/[-,\/]/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3);
+
+  return Array.from(new Set([metroName.toLowerCase(), ...parts]));
+}
+
 export function calculateAffordabilityTool(input: unknown): ToolResult<{
   inputs: Record<string, unknown>;
   results: {
@@ -31,12 +42,18 @@ export function calculateAffordabilityTool(input: unknown): ToolResult<{
 }> {
   try {
     const validated = calculateAffordabilityRequestSchema.parse(input);
+    const requestedTargetMetro = validated.targetMetro?.toLowerCase();
+    const metroRecord = requestedTargetMetro
+      ? getMetros().find((metro) => metro.id === validated.targetMetro || getMetroAliases(metro.name).includes(requestedTargetMetro))
+      : undefined;
+    const resolvedTargetMetro = metroRecord?.id ?? validated.targetMetro;
+    const resolvedTargetMetroName = metroRecord?.name ?? validated.targetMetro;
     const monthlyIncomeBasis = getEstimatedMonthlyIncome(
       validated.annualIncome,
       validated.useEstimatedAfterTaxIncome ?? false,
     );
     const maxAffordableMonthlyHousing = roundToTwo(monthlyIncomeBasis * 0.3);
-    const targetMetroRent = validated.targetMetro ? getLatestRentByMetro(validated.targetMetro) : null;
+    const targetMetroRent = resolvedTargetMetro ? getLatestRentByMetro(resolvedTargetMetro) : null;
 
     const affordability = targetMetroRent !== null
       ? calculateAffordability(validated.annualIncome, targetMetroRent, {
@@ -48,7 +65,7 @@ export function calculateAffordabilityTool(input: unknown): ToolResult<{
       : null;
 
     const summary = affordability
-      ? `${validated.targetMetro} is ${affordability.risk.toLowerCase()} at ${affordability.rentBurdenPercent}% of monthly income.`
+      ? `${resolvedTargetMetroName} is ${affordability.risk.toLowerCase()} at ${affordability.rentBurdenPercent}% of monthly income.`
       : `At 30% of monthly income, the maximum affordable monthly housing cost is $${maxAffordableMonthlyHousing}.`;
 
     const data = calculateAffordabilityResponseDataSchema.parse({

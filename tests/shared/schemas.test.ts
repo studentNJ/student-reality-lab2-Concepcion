@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  affordabilityScenarioRequestSchema,
   affordabilityScenarioGraphHelperInputSchema,
   calculateAffordabilityRequestSchema,
   chartSpecSchema,
+  compareMetrosRequestSchema,
+  compareMetrosResponseDataSchema,
+  compareAffordabilityScenariosRequestSchema,
+  compareAffordabilityScenariosResponseDataSchema,
+  conversationHistoryRequestSchema,
+  conversationHistoryResponseDataSchema,
   createGraphHelperInputSchema,
   domainDataSourceStatusSchema,
   getMetrosResponseDataSchema,
@@ -51,6 +58,91 @@ describe("shared schemas", () => {
 
     expect(trendRequest.metro).toBe("Chicago");
     expect(affordabilityRequest.householdSize).toBe(2);
+  });
+
+  it("accepts valid metro comparison inputs and outputs", () => {
+    const compareRequest = compareMetrosRequestSchema.parse({
+      metros: ["Chicago", "Washington"],
+      startYear: 2020,
+      endYear: 2024,
+    });
+    const compareResponse = compareMetrosResponseDataSchema.parse({
+      metros: ["Chicago-Naperville-Elgin", "Washington-Arlington-Alexandria"],
+      startYear: 2020,
+      endYear: 2024,
+      metric: "rent_burden_percent",
+      trends: [
+        {
+          metro: "Chicago-Naperville-Elgin",
+          startYear: 2020,
+          endYear: 2024,
+          series: [
+            { year: 2020, value: 28.54 },
+            { year: 2021, value: 28.77 },
+          ],
+        },
+        {
+          metro: "Washington-Arlington-Alexandria",
+          startYear: 2020,
+          endYear: 2024,
+          series: [
+            { year: 2020, value: 33.84 },
+            { year: 2021, value: 34.25 },
+          ],
+        },
+      ],
+    });
+
+    expect(compareRequest.metros).toHaveLength(2);
+    expect(compareResponse.trends).toHaveLength(2);
+  });
+
+  it("accepts valid affordability scenario comparison payloads", () => {
+    const scenario = affordabilityScenarioRequestSchema.parse({
+      label: "Solo",
+      monthlyDebt: 200,
+    });
+    const request = compareAffordabilityScenariosRequestSchema.parse({
+      annualIncome: 72000,
+      targetMetro: "Chicago",
+      scenarios: [
+        scenario,
+        { label: "Roommate", roommates: 1, householdSize: 2 },
+      ],
+    });
+    const response = compareAffordabilityScenariosResponseDataSchema.parse({
+      annualIncome: 72000,
+      targetMetro: "Chicago",
+      scenarios: [
+        {
+          label: "Solo",
+          risk: "Risky",
+          data: {
+            inputs: { annualIncome: 72000, targetMetro: "Chicago", monthlyDebt: 200 },
+            results: {
+              maxAffordableMonthlyHousing: 1800,
+              affordabilityRatio: 0.32,
+              summary: "Solo scenario",
+            },
+          },
+        },
+        {
+          label: "Roommate",
+          risk: "Safe",
+          data: {
+            inputs: { annualIncome: 72000, targetMetro: "Chicago", roommates: 1, householdSize: 2 },
+            results: {
+              maxAffordableMonthlyHousing: 1800,
+              affordabilityRatio: 0.16,
+              summary: "Roommate scenario",
+            },
+          },
+        },
+      ],
+    });
+
+    expect(request.scenarios).toHaveLength(2);
+    expect(response.scenarios[0]?.risk).toBe("Risky");
   });
 
   it("rejects inconsistent affordability payloads", () => {
@@ -187,5 +279,47 @@ describe("shared schemas", () => {
     });
 
     expect(status.metroCount).toBe(10);
+  });
+
+  it("accepts valid conversation history payloads", () => {
+    const request = conversationHistoryRequestSchema.parse({
+      conversationId: "conversation-123",
+      limit: 10,
+      includeToolCalls: true,
+    });
+    const response = conversationHistoryResponseDataSchema.parse({
+      conversationId: "conversation-123",
+      totalMessages: 2,
+      messages: [
+        {
+          id: "message-1",
+          role: "user",
+          content: "Show me Chicago rent burden.",
+          hasChartSpec: false,
+          createdAt: "2026-04-02T00:00:00.000Z",
+        },
+        {
+          id: "message-2",
+          role: "assistant",
+          state: "complete",
+          content: "Here is the chart.",
+          planner: "fallback",
+          intent: "metro_trend_chart",
+          hasChartSpec: true,
+          createdAt: "2026-04-02T00:00:01.000Z",
+          toolCalls: [
+            {
+              toolName: "get_metro_trend",
+              status: "success",
+              summary: "Loaded 5 trend points.",
+              input: { metro: "Chicago" },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(request.limit).toBe(10);
+    expect(response.messages[1]?.toolCalls).toHaveLength(1);
   });
 });

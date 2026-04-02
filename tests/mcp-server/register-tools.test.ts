@@ -10,10 +10,14 @@ describe("mcp server registration", () => {
       "get_available_years",
       "get_metros",
       "get_metrics_snapshot",
+      "get_metrics_by_range",
       "get_metro_trend",
+      "compare_metros",
       "calculate_affordability",
+      "compare_affordability_scenarios",
       "get_data_source_status",
       "create_graph",
+      "retrieve_conversation_history",
     ]);
   });
 });

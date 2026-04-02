@@ -1,8 +1,12 @@
 import {
   calculateAffordabilityTool,
+  compareAffordabilityScenariosTool,
+  compareMetrosTool,
   createGraphTool,
+  retrieveConversationHistoryTool,
   getAvailableYearsTool,
   getDataSourceStatusTool,
+  getMetricsByRangeTool,
   getMetricsSnapshotTool,
   getMetrosTool,
   getMetroTrendTool,
@@ -10,7 +14,7 @@ import {
   type ToolResult,
   type ToolSuccess,
 } from "@student-reality-lab/mcp-server";
-import type { ChartSpec, GetAvailableYearsResponseData, GetDataSourceStatusResponseData, GetMetrosResponseData, MetricsSnapshotResponseData, MetroTrendResponseData } from "@student-reality-lab/shared";
+import type { ChartSpec, CompareAffordabilityScenariosResponseData, CompareMetrosResponseData, ConversationHistoryResponseData, GetAvailableYearsResponseData, GetDataSourceStatusResponseData, GetMetrosResponseData, MetricsRangeResponseData, MetricsSnapshotResponseData, MetroTrendResponseData } from "@student-reality-lab/shared";
 import type { CalculateAffordabilityResponseData } from "@student-reality-lab/shared";
 import type { ToolCallSummary } from "@web/lib/chat-types";
 
@@ -18,30 +22,42 @@ export type SupportedToolName =
   | "get_available_years"
   | "get_metros"
   | "get_metrics_snapshot"
+  | "get_metrics_by_range"
   | "get_metro_trend"
+  | "compare_metros"
   | "calculate_affordability"
+  | "compare_affordability_scenarios"
   | "get_data_source_status"
-  | "create_graph";
+  | "create_graph"
+  | "retrieve_conversation_history";
 
 type ToolDataMap = {
   get_available_years: GetAvailableYearsResponseData;
   get_metros: GetMetrosResponseData;
   get_metrics_snapshot: MetricsSnapshotResponseData;
+  get_metrics_by_range: MetricsRangeResponseData;
   get_metro_trend: MetroTrendResponseData;
+  compare_metros: CompareMetrosResponseData;
   calculate_affordability: CalculateAffordabilityResponseData;
+  compare_affordability_scenarios: CompareAffordabilityScenariosResponseData;
   get_data_source_status: GetDataSourceStatusResponseData;
   create_graph: ChartSpec;
+  retrieve_conversation_history: ConversationHistoryResponseData;
 };
 
 const toolRegistry = {
   get_available_years: getAvailableYearsTool,
   get_metros: getMetrosTool,
   get_metrics_snapshot: getMetricsSnapshotTool,
+  get_metrics_by_range: getMetricsByRangeTool,
   get_metro_trend: getMetroTrendTool,
+  compare_metros: compareMetrosTool,
   calculate_affordability: calculateAffordabilityTool,
+  compare_affordability_scenarios: compareAffordabilityScenariosTool,
   get_data_source_status: getDataSourceStatusTool,
   create_graph: createGraphTool,
-} satisfies Record<SupportedToolName, (input: unknown) => ToolResult<unknown>>;
+  retrieve_conversation_history: retrieveConversationHistoryTool,
+} satisfies Record<SupportedToolName, (input: unknown) => ToolResult<unknown> | Promise<ToolResult<unknown>>>;
 
 export interface ToolExecutionSuccess<TToolName extends SupportedToolName> {
   ok: true;
@@ -75,13 +91,25 @@ function summarizeSuccess(toolName: SupportedToolName, data: ToolDataMap[Support
       const snapshotData = data as ToolDataMap["get_metrics_snapshot"];
       return `Loaded ${snapshotData.rows.length} metro rows for ${snapshotData.year}.`;
     }
+    case "get_metrics_by_range": {
+      const rangeData = data as ToolDataMap["get_metrics_by_range"];
+      return `Loaded ${rangeData.rows.length} aggregated metro summaries for ${rangeData.startYear}-${rangeData.endYear}.`;
+    }
     case "get_metro_trend": {
       const trendData = data as ToolDataMap["get_metro_trend"];
       return `Loaded ${trendData.series.length} trend points for ${trendData.metro}.`;
     }
+    case "compare_metros": {
+      const compareData = data as ToolDataMap["compare_metros"];
+      return `Loaded comparable trend data for ${compareData.trends.length} metros.`;
+    }
     case "calculate_affordability": {
       const affordabilityData = data as ToolDataMap["calculate_affordability"];
       return affordabilityData.results.summary ?? "Calculated affordability metrics.";
+    }
+    case "compare_affordability_scenarios": {
+      const scenarioData = data as ToolDataMap["compare_affordability_scenarios"];
+      return `Calculated ${scenarioData.scenarios.length} affordability scenarios.`;
     }
     case "get_data_source_status": {
       const statusData = data as ToolDataMap["get_data_source_status"];
@@ -91,14 +119,18 @@ function summarizeSuccess(toolName: SupportedToolName, data: ToolDataMap[Support
       const chartData = data as ToolDataMap["create_graph"];
       return `Created a ${chartData.chartType} chart specification.`;
     }
+    case "retrieve_conversation_history": {
+      const historyData = data as ToolDataMap["retrieve_conversation_history"];
+      return `Loaded ${historyData.messages.length} persisted messages from the conversation history.`;
+    }
   }
 }
 
-export function runTool<TToolName extends SupportedToolName>(
+export async function runTool<TToolName extends SupportedToolName>(
   toolName: TToolName,
   input: unknown = {},
-): ToolExecution<TToolName> {
-  const result = toolRegistry[toolName](input) as ToolResult<ToolDataMap[TToolName]>;
+): Promise<ToolExecution<TToolName>> {
+  const result = await toolRegistry[toolName](input) as ToolResult<ToolDataMap[TToolName]>;
 
   if (result.ok) {
     return {
