@@ -1,6 +1,8 @@
 import type { ChatMessage } from "@web/lib/chat-types";
 import { ChartResultCard } from "./ChartResultCard";
+import { EmptyState } from "./EmptyState";
 import { MessageBubble } from "./MessageBubble";
+import { SourceCard } from "./SourceCard";
 import { ToolCallCard } from "./ToolCallCard";
 
 interface MessageListProps {
@@ -13,11 +15,10 @@ export function MessageList({ messages }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <section className="message-list" aria-label="Conversation">
-        <div className="empty-state">
-          <p className="empty-state-eyebrow">Conversation</p>
-          <h2>Start with a metro, a scenario, or a chart request.</h2>
-          <p>The Phase 5 interface is ready to display assistant text, tool results, and chart specs in one stream.</p>
-        </div>
+        <EmptyState
+          description="Ask for a metro trend, a yearly comparison, an affordability estimate, or the current data source status. Charts and tool output will appear inline with the response."
+          title="Start with a metro, a scenario, or a chart request."
+        />
       </section>
     );
   }
@@ -32,6 +33,9 @@ export function MessageList({ messages }: MessageListProps) {
                 <ToolCallCard key={`${message.id}-${toolCall.toolName}-${index}`} toolCall={toolCall} />
               ))
             : null}
+          {(message.sources ?? []).map((source, index) => (
+            <SourceCard key={`${message.id}-source-${source.title}-${index}`} source={source} />
+          ))}
           {(message.chartSpecs ?? (message.chartSpec ? [message.chartSpec] : [])).map((chartSpec, index) => (
             <ChartResultCard chartSpec={chartSpec} key={`${message.id}-chart-${chartSpec.title}-${index}`} />
           ))}

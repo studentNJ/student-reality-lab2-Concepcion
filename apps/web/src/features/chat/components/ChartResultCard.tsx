@@ -1,4 +1,5 @@
 import type { ChartSpec, SeriesSpec } from "@student-reality-lab/shared";
+import { AnalysisCard } from "./AnalysisCard";
 
 interface ChartResultCardProps {
   chartSpec: ChartSpec;
@@ -353,11 +354,7 @@ export function ChartResultCard({ chartSpec }: ChartResultCardProps) {
   const shouldShowLegend = chartSpec.formattingHints?.showLegend ?? chartSpec.series.length > 1;
 
   return (
-    <section className="artifact-card chart-card">
-      <div className="artifact-header">
-        <span className="artifact-label">Chart</span>
-        <span className="artifact-mode">{chartSpec.chartType}</span>
-      </div>
+    <AnalysisCard className="chart-card" label="Chart" mode={chartSpec.chartType}>
       <h3>{chartSpec.title}</h3>
       {chartSpec.subtitle ? <p className="artifact-subtitle">{chartSpec.subtitle}</p> : null}
       {chartSpec.description ? <p className="artifact-description">{chartSpec.description}</p> : null}
@@ -425,6 +422,6 @@ export function ChartResultCard({ chartSpec }: ChartResultCardProps) {
           ))}
         </section>
       ) : null}
-    </section>
+    </AnalysisCard>
   );
 }

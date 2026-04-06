@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import type { ChatMessage } from "@web/lib/chat-types";
+import { AppShell } from "./AppShell";
+import { ChatWorkspace } from "./ChatWorkspace";
+import { HeaderBar } from "./HeaderBar";
+import { HeroIntro } from "./HeroIntro";
+import { InsightBadge } from "./InsightBadge";
 import { MessageList } from "./MessageList";
 import { PromptBox } from "./PromptBox";
+import { WorkspaceContext } from "./WorkspaceContext";
 
 const starterPrompts = [
   "Show a rent burden trend chart for Chicago.",
@@ -12,14 +18,7 @@ const starterPrompts = [
   "What data source is the app using right now?",
 ];
 
-const initialMessages: ChatMessage[] = [
-  {
-    id: "assistant-intro",
-    role: "assistant",
-    state: "complete",
-    content: "Ask for a metro trend, a snapshot comparison, an affordability estimate, or the current data source status.",
-  },
-];
+const initialMessages: ChatMessage[] = [];
 
 function buildPendingContent(prompt: string): string {
   const normalizedPrompt = prompt.toLowerCase();
@@ -66,6 +65,8 @@ export function ChatShell() {
     const toolCalls = message.toolCalls ?? (message.toolCall ? [message.toolCall] : []);
     return message.state === "error" || toolCalls.some((toolCall) => toolCall.status === "error");
   });
+  const modeLabel = plannerMode === "live-api" ? "Live API" : plannerMode === "model" ? "Model plan" : "Fallback plan";
+  const statusLabel = hasErrors ? "Needs review" : isPending ? "Working" : "Ready";
 
   async function handleSubmit(prompt: string) {
     const userMessage: ChatMessage = {
@@ -74,8 +75,9 @@ export function ChatShell() {
       state: "complete",
       content: prompt,
     };
+    const nextMessages = [...messages, userMessage];
 
-    setMessages((currentMessages) => [...currentMessages, userMessage]);
+    setMessages(nextMessages);
     setIsPending(true);
     setPendingContent(buildPendingContent(prompt));
 
@@ -88,7 +90,7 @@ export function ChatShell() {
         body: JSON.stringify({
           conversationId,
           prompt,
-          history: messages.map((message) => ({ role: message.role, content: message.content })),
+          history: nextMessages.map((message) => ({ role: message.role, content: message.content })),
         }),
       });
 
@@ -129,38 +131,24 @@ export function ChatShell() {
   }
 
   return (
-    <main className="chat-shell">
-      <section className="hero-panel">
-        <p className="eyebrow">Student Reality Lab v2</p>
-        <h1>Chat-first housing analysis with tool and chart results inline.</h1>
-        <p className="hero-copy">
-          The UI is now structured around assistant messages, MCP tool cards, and graph specs so Phase 6 can plug in orchestration without changing the presentation contract.
-        </p>
-        <div className="system-strip" aria-label="Conversation status">
-          <div className="system-stat">
-            <span>Mode</span>
-            <strong>{plannerMode === "live-api" ? "Live API" : plannerMode === "model" ? "Model plan" : "Fallback plan"}</strong>
-          </div>
-          {showToolCards ? (
-            <div className="system-stat">
-              <span>Tool cards</span>
-              <strong>{successfulToolCalls}</strong>
-            </div>
-          ) : null}
-          <div className="system-stat">
-            <span>Charts</span>
-            <strong>{chartCount}</strong>
-          </div>
-          <div className={`system-stat ${hasErrors ? "system-stat-warning" : "system-stat-ok"}`}>
-            <span>Status</span>
-            <strong>{hasErrors ? "Needs review" : isPending ? "Working" : "Ready"}</strong>
-          </div>
-        </div>
-      </section>
-      <section className="workspace-panel">
-        <MessageList messages={visibleMessages} />
-        <PromptBox disabled={isPending} onSubmit={handleSubmit} suggestions={starterPrompts} />
-      </section>
-    </main>
+    <AppShell
+      header={
+        <HeaderBar
+          chartCount={chartCount}
+          hasErrors={hasErrors}
+          modeLabel={modeLabel}
+          showToolCards={showToolCards}
+          statusLabel={statusLabel}
+          toolCount={successfulToolCalls}
+        />
+      }
+      hero={<HeroIntro onPromptSelect={handleSubmit} suggestions={starterPrompts} />}
+    >
+      <ChatWorkspace
+        composer={<PromptBox disabled={isPending} onSubmit={handleSubmit} />}
+        context={<WorkspaceContext chartCount={chartCount} hasErrors={hasErrors} isPending={isPending} messages={messages} modeLabel={modeLabel} statusLabel={statusLabel} />}
+        conversation={<MessageList messages={visibleMessages} />}
+      />
+    </AppShell>
   );
 }

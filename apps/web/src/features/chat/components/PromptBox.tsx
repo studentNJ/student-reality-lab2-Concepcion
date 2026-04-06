@@ -5,10 +5,9 @@ import { useState } from "react";
 interface PromptBoxProps {
   disabled?: boolean;
   onSubmit: (prompt: string) => void;
-  suggestions?: string[];
 }
 
-export function PromptBox({ disabled = false, onSubmit, suggestions = [] }: PromptBoxProps) {
+export function PromptBox({ disabled = false, onSubmit }: PromptBoxProps) {
   const [prompt, setPrompt] = useState("");
 
   function submitPrompt() {
@@ -24,21 +23,6 @@ export function PromptBox({ disabled = false, onSubmit, suggestions = [] }: Prom
 
   return (
     <section className="prompt-box-shell">
-      {suggestions.length > 0 ? (
-        <div className="prompt-suggestions" aria-label="Starter prompts">
-          {suggestions.map((suggestion) => (
-            <button
-              className="suggestion-chip"
-              disabled={disabled}
-              key={suggestion}
-              onClick={() => onSubmit(suggestion)}
-              type="button"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      ) : null}
       <textarea
         className="prompt-box"
         disabled={disabled}
@@ -49,14 +33,14 @@ export function PromptBox({ disabled = false, onSubmit, suggestions = [] }: Prom
             submitPrompt();
           }
         }}
-        placeholder="Ask about metros, affordability scenarios, or request a graph"
-        rows={4}
+        placeholder="Ask about metros, affordability scenarios, year ranges, or request a chart"
+        rows={5}
         value={prompt}
       />
       <div className="prompt-actions">
-        <p>{disabled ? "Assistant is preparing the next response." : "Shift+Enter for a new line. Enter to send."}</p>
+        <p>{disabled ? "Assistant is preparing the next response." : "Use Enter to send and Shift+Enter for a new line."}</p>
         <button className="send-button" disabled={disabled || prompt.trim().length === 0} onClick={submitPrompt} type="button">
-          Send
+          Start analysis
         </button>
       </div>
     </section>

@@ -1,7 +1,32 @@
 import type { ChatMessage } from "@web/lib/chat-types";
+import type { ReactNode } from "react";
 
 interface MessageBubbleProps {
   message: ChatMessage;
+}
+
+function renderMessageContent(content: string): ReactNode {
+  const sections = content
+    .split(/\n\s*\n/)
+    .map((section) => section.trim())
+    .filter(Boolean);
+
+  return sections.map((section, index) => {
+    const lines = section.split("\n").map((line) => line.trim()).filter(Boolean);
+    const isList = lines.length > 1 && lines.every((line) => line.startsWith("- "));
+
+    if (isList) {
+      return (
+        <ul className="message-list-block" key={`${section}-${index}`}>
+          {lines.map((line) => (
+            <li key={line}>{line.slice(2)}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return <p className="message-content" key={`${section}-${index}`}>{section}</p>;
+  });
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
@@ -31,7 +56,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         </div>
       ) : (
-        <p className="message-content">{message.content}</p>
+        <div className="message-body">{renderMessageContent(message.content)}</div>
       )}
     </article>
   );

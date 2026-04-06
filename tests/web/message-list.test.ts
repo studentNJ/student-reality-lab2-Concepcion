@@ -31,6 +31,14 @@ const message: ChatMessage = {
   role: "assistant",
   state: "complete",
   content: "Here is the requested chart.",
+  sources: [
+    {
+      kind: "source",
+      title: "Trend data for Chicago",
+      detail: "Loaded metro trend data across 2020-2024 using the get_metro_trend tool.",
+      cue: "2020-2024",
+    },
+  ],
   toolCalls: [
     {
       toolName: "create_graph",
@@ -53,6 +61,7 @@ describe("MessageList", () => {
     const markup = renderToStaticMarkup(React.createElement(MessageList, { messages: [message] }));
 
     expect(markup).toContain("tool-card");
+    expect(markup).toContain("source-card");
     expect(markup).toContain("chart-card");
   });
 
@@ -62,6 +71,7 @@ describe("MessageList", () => {
     const markup = renderToStaticMarkup(React.createElement(MessageList, { messages: [message] }));
 
     expect(markup).not.toContain("tool-card");
+    expect(markup).toContain("source-card");
     expect(markup).toContain("chart-card");
   });
 });

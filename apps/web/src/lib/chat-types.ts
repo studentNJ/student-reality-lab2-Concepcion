@@ -7,6 +7,13 @@ export interface ToolCallSummary {
   input?: Record<string, unknown>;
 }
 
+export interface SourceNote {
+  kind: "source" | "method" | "scope";
+  title: string;
+  detail: string;
+  cue?: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -16,4 +23,5 @@ export interface ChatMessage {
   toolCalls?: ToolCallSummary[];
   chartSpec?: ChartSpec;
   chartSpecs?: ChartSpec[];
+  sources?: SourceNote[];
 }

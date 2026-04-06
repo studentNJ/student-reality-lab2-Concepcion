@@ -44,6 +44,7 @@ describe("orchestrateChat", () => {
     expect(response.meta.intent).toBe("metro_trend_chart");
     expect(response.message.chartSpec?.title).toContain("Chicago");
     expect(response.message.chartSpecs).toHaveLength(1);
+    expect(response.message.sources?.some((source) => source.title.includes("Chicago"))).toBe(true);
   });
 
   it("normalizes legacy model metric aliases before building snapshot charts", async () => {
@@ -216,6 +217,7 @@ describe("orchestrateChat", () => {
     expect(response.message.state).toBe("complete");
     expect(response.message.content).toContain("2020-2024");
     expect(response.message.toolCalls?.some((toolCall) => toolCall.toolName === "get_metrics_by_range")).toBe(true);
+    expect(response.message.sources?.some((source) => source.title === "Range summary dataset")).toBe(true);
   });
 
   it("routes roommate scenario prompts to compare_affordability_scenarios", async () => {
