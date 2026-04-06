@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChatStreamEvent } from "@web/lib/chat-stream-types";
 import type { ChatMessage } from "@web/lib/chat-types";
 import { AppShell } from "./AppShell";
 import { ChatWorkspace } from "./ChatWorkspace";
 import { HeaderBar } from "./HeaderBar";
 import { HeroIntro } from "./HeroIntro";
-import { InsightBadge } from "./InsightBadge";
 import { MessageList } from "./MessageList";
 import { PromptBox } from "./PromptBox";
 import { WorkspaceContext } from "./WorkspaceContext";
@@ -42,17 +42,12 @@ export function ChatShell() {
   const showToolCards = process.env.NODE_ENV !== "production";
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isPending, setIsPending] = useState(false);
-  const [pendingContent, setPendingContent] = useState("");
+  const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [plannerMode, setPlannerMode] = useState<"live-api" | "model" | "fallback">("live-api");
-  const pendingMessage: ChatMessage = {
-    id: "assistant-pending",
-    role: "assistant",
-    state: "loading",
-    content: pendingContent,
-  };
-
-  const visibleMessages = isPending ? [...messages, pendingMessage] : messages;
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const activeStreamRequestIdRef = useRef(0);
+  const visibleMessages = isPending && streamingMessage ? [...messages, streamingMessage] : messages;
 
   const successfulToolCalls = messages.reduce((count, message) => {
     const toolCalls = message.toolCalls ?? (message.toolCall ? [message.toolCall] : []);
@@ -68,7 +63,103 @@ export function ChatShell() {
   const modeLabel = plannerMode === "live-api" ? "Live API" : plannerMode === "model" ? "Model plan" : "Fallback plan";
   const statusLabel = hasErrors ? "Needs review" : isPending ? "Working" : "Ready";
 
+  function createPendingMessage(prompt: string): ChatMessage {
+    return {
+      id: "assistant-pending",
+      role: "assistant",
+      state: "loading",
+      content: buildPendingContent(prompt),
+      toolCalls: [],
+      chartSpecs: [],
+      sources: [],
+    };
+  }
+
+  useEffect(() => {
+    return () => {
+      streamAbortRef.current?.abort();
+    };
+  }, []);
+
+  async function consumeEventStream(response: Response, onEvent: (event: ChatStreamEvent) => void | Promise<void>) {
+    if (!response.body) {
+      throw new Error("Streaming response body is unavailable.");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+
+      while (buffer.includes("\n\n")) {
+        const boundary = buffer.indexOf("\n\n");
+        const frame = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+
+        const data = frame
+          .split("\n")
+          .filter((line) => line.startsWith("data: "))
+          .map((line) => line.slice(6))
+          .join("\n");
+
+        if (!data) {
+          continue;
+        }
+
+        await onEvent(JSON.parse(data) as ChatStreamEvent);
+      }
+    }
+  }
+
+  async function requestJsonFallback(prompt: string, nextMessages: ChatMessage[]) {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        conversationId,
+        prompt,
+        history: nextMessages.map((message) => ({ role: message.role, content: message.content })),
+      }),
+    });
+
+    const payload = await response.json() as {
+      message?: ChatMessage;
+      meta?: { conversationId?: string; planner?: "model" | "fallback"; intent?: string };
+    };
+
+    const assistantMessage = payload.message ?? {
+      id: `assistant-${crypto.randomUUID()}`,
+      role: "assistant",
+      state: "error",
+      content: "The chat API returned an unexpected response.",
+    };
+
+    if (!response.ok && assistantMessage.state !== "error") {
+      assistantMessage.state = "error";
+    }
+
+    setMessages((currentMessages) => [...currentMessages, assistantMessage]);
+    setConversationId((currentConversationId) => payload.meta?.conversationId ?? currentConversationId);
+    setPlannerMode(payload.meta?.planner ?? "fallback");
+  }
+
   async function handleSubmit(prompt: string) {
+    streamAbortRef.current?.abort();
+    const abortController = new AbortController();
+    streamAbortRef.current = abortController;
+    activeStreamRequestIdRef.current += 1;
+    const requestId = activeStreamRequestIdRef.current;
+
     const userMessage: ChatMessage = {
       id: `user-${crypto.randomUUID()}`,
       role: "user",
@@ -79,10 +170,13 @@ export function ChatShell() {
 
     setMessages(nextMessages);
     setIsPending(true);
-    setPendingContent(buildPendingContent(prompt));
+    setStreamingMessage(createPendingMessage(prompt));
 
     try {
-      const response = await fetch("/api/chat", {
+      let receivedFinalEvent = false;
+      let receivedErrorEvent = false;
+
+      const response = await fetch("/api/chat/stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,28 +186,118 @@ export function ChatShell() {
           prompt,
           history: nextMessages.map((message) => ({ role: message.role, content: message.content })),
         }),
+        signal: abortController.signal,
       });
 
-      const payload = await response.json() as {
-        message?: ChatMessage;
-        meta?: { conversationId?: string; planner?: "model" | "fallback"; intent?: string };
-      };
-
-      const assistantMessage = payload.message ?? {
-        id: `assistant-${crypto.randomUUID()}`,
-        role: "assistant",
-        state: "error",
-        content: "The chat API returned an unexpected response.",
-      };
-
-      if (!response.ok && assistantMessage.state !== "error") {
-        assistantMessage.state = "error";
+      if (!response.ok || !response.headers.get("content-type")?.includes("text/event-stream")) {
+        setStreamingMessage(null);
+        await requestJsonFallback(prompt, nextMessages);
+        return;
       }
 
-      setMessages((currentMessages) => [...currentMessages, assistantMessage]);
-      setConversationId((currentConversationId) => payload.meta?.conversationId ?? currentConversationId);
-      setPlannerMode(payload.meta?.planner ?? "fallback");
-    } catch {
+      await consumeEventStream(response, async (event) => {
+        if (requestId !== activeStreamRequestIdRef.current) {
+          return;
+        }
+
+        switch (event.type) {
+          case "meta":
+            setConversationId((currentConversationId) => event.meta.conversationId ?? currentConversationId);
+            setPlannerMode(event.meta.planner);
+            break;
+          case "status":
+            setStreamingMessage((currentMessage) => currentMessage
+              ? {
+                  ...currentMessage,
+                  content: event.content,
+                }
+              : currentMessage);
+            break;
+          case "tool-start":
+            setStreamingMessage((currentMessage) => currentMessage
+              ? {
+                  ...currentMessage,
+                  toolCalls: [
+                    ...(currentMessage.toolCalls ?? []),
+                    {
+                      toolName: event.toolName,
+                      status: "pending",
+                      summary: `Running ${event.toolName}.`,
+                      input: event.input,
+                    },
+                  ],
+                }
+              : currentMessage);
+            break;
+          case "tool-complete":
+            setStreamingMessage((currentMessage) => currentMessage
+              ? {
+                  ...currentMessage,
+                  toolCalls: (() => {
+                    const existingToolCalls = currentMessage.toolCalls ?? [];
+                    const pendingIndex = existingToolCalls.findIndex((toolCall) => {
+                      if (toolCall.status !== "pending" || toolCall.toolName !== event.toolCall.toolName) {
+                        return false;
+                      }
+
+                      return JSON.stringify(toolCall.input ?? null) === JSON.stringify(event.toolCall.input ?? null);
+                    });
+
+                    if (pendingIndex === -1) {
+                      return [...existingToolCalls, event.toolCall];
+                    }
+
+                    return existingToolCalls.map((toolCall, index) => index === pendingIndex ? event.toolCall : toolCall);
+                  })(),
+                }
+              : currentMessage);
+            break;
+          case "artifact":
+            setStreamingMessage((currentMessage) => currentMessage
+              ? {
+                  ...currentMessage,
+                  chartSpecs: event.chartSpec ? [...(currentMessage.chartSpecs ?? []), event.chartSpec] : currentMessage.chartSpecs,
+                  sources: event.sources ? [...(currentMessage.sources ?? []), ...event.sources] : currentMessage.sources,
+                }
+              : currentMessage);
+            break;
+          case "final":
+            receivedFinalEvent = true;
+            setMessages((currentMessages) => [...currentMessages, event.message]);
+            setConversationId((currentConversationId) => event.meta.conversationId ?? currentConversationId);
+            setPlannerMode(event.meta.planner);
+            setStreamingMessage(null);
+            break;
+          case "error":
+            receivedErrorEvent = true;
+            setMessages((currentMessages) => [
+              ...currentMessages,
+              {
+                id: `assistant-${crypto.randomUUID()}`,
+                role: "assistant",
+                state: "error",
+                content: event.content,
+              },
+            ]);
+            setStreamingMessage(null);
+            if (event.meta?.planner) {
+              setPlannerMode(event.meta.planner);
+            }
+            if (event.meta?.conversationId) {
+              setConversationId(event.meta.conversationId);
+            }
+            break;
+        }
+      });
+
+      if (!receivedFinalEvent && !receivedErrorEvent) {
+        throw new Error("Streaming response ended before the final event.");
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
       setMessages((currentMessages) => [
         ...currentMessages,
         {
@@ -123,10 +307,16 @@ export function ChatShell() {
           content: "The chat request failed before a response was returned.",
         },
       ]);
+      setStreamingMessage(null);
       setPlannerMode("fallback");
     } finally {
-      setIsPending(false);
-      setPendingContent("");
+      if (requestId === activeStreamRequestIdRef.current) {
+        setIsPending(false);
+        setStreamingMessage(null);
+        if (streamAbortRef.current === abortController) {
+          streamAbortRef.current = null;
+        }
+      }
     }
   }
 

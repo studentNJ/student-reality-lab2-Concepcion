@@ -3365,6 +3365,7 @@ function createAssistantMessage(input) {
     const chartSpecs = input.chartSpecs ?? (input.chartSpec ? [
         input.chartSpec
     ] : undefined);
+    const sources = buildSourceNotes(input.toolCalls ?? [], chartSpecs);
     return {
         id: `assistant-${crypto.randomUUID()}`,
         role: "assistant",
@@ -3378,8 +3379,116 @@ function createAssistantMessage(input) {
         } : {},
         ...input.toolCalls ? {
             toolCalls: input.toolCalls
+        } : {},
+        ...sources.length ? {
+            sources
         } : {}
     };
+}
+function formatYearRange(startYear, endYear) {
+    return typeof startYear === "number" && typeof endYear === "number" ? `${startYear}-${endYear}` : null;
+}
+function buildSourceNotes(toolCalls, chartSpecs) {
+    const notes = [];
+    for (const toolCall of toolCalls){
+        if (toolCall.status !== "success") {
+            continue;
+        }
+        const input = toolCall.input;
+        switch(toolCall.toolName){
+            case "get_metro_trend":
+                {
+                    const metro = typeof input?.metro === "string" ? input.metro : "selected metro";
+                    const range = formatYearRange(input?.startYear, input?.endYear);
+                    notes.push({
+                        kind: "source",
+                        title: `Trend data for ${metro}`,
+                        detail: range ? `Loaded metro trend data across ${range} using the get_metro_trend tool.` : "Loaded metro trend data using the get_metro_trend tool.",
+                        cue: range ?? "Trend series"
+                    });
+                    break;
+                }
+            case "compare_metros":
+                {
+                    const metros = Array.isArray(input?.metros) ? input.metros.filter((metro)=>typeof metro === "string" && metro.length > 0) : [];
+                    const range = formatYearRange(input?.startYear, input?.endYear);
+                    notes.push({
+                        kind: "source",
+                        title: metros.length ? `Comparison set: ${metros.join(", ")}` : "Metro comparison set",
+                        detail: range ? `Loaded comparable metro trends across ${range} with the compare_metros tool.` : "Loaded comparable metro trends with the compare_metros tool.",
+                        cue: metros.length ? `${metros.length} metros` : undefined
+                    });
+                    break;
+                }
+            case "get_metrics_snapshot":
+                {
+                    const year = typeof input?.year === "number" ? input.year : null;
+                    notes.push({
+                        kind: "source",
+                        title: year ? `Snapshot dataset for ${year}` : "Snapshot dataset",
+                        detail: year ? `Loaded metro snapshot metrics for ${year} through the get_metrics_snapshot tool.` : "Loaded metro snapshot metrics through the get_metrics_snapshot tool.",
+                        cue: year ? String(year) : "Snapshot"
+                    });
+                    break;
+                }
+            case "get_metrics_by_range":
+                {
+                    const range = formatYearRange(input?.startYear, input?.endYear);
+                    notes.push({
+                        kind: "source",
+                        title: "Range summary dataset",
+                        detail: range ? `Aggregated metro metrics across ${range} using the get_metrics_by_range tool.` : "Aggregated metro metrics using the get_metrics_by_range tool.",
+                        cue: range ?? "Range summary"
+                    });
+                    break;
+                }
+            case "calculate_affordability":
+                {
+                    const income = typeof input?.annualIncome === "number" ? input.annualIncome : null;
+                    const targetMetro = typeof input?.targetMetro === "string" ? input.targetMetro : null;
+                    notes.push({
+                        kind: "method",
+                        title: targetMetro ? `Affordability method for ${targetMetro}` : "Affordability method",
+                        detail: income !== null ? `Calculated affordability using an annual income of $${income.toLocaleString()}${targetMetro ? ` and metro-specific rent context for ${targetMetro}` : ""}.` : "Calculated affordability using the configured affordability formula.",
+                        cue: income !== null ? `$${income.toLocaleString()}` : "Scenario calculation"
+                    });
+                    break;
+                }
+            case "compare_affordability_scenarios":
+                {
+                    notes.push({
+                        kind: "method",
+                        title: "Scenario comparison method",
+                        detail: "Compared multiple affordability scenarios using the compare_affordability_scenarios tool.",
+                        cue: "Scenario analysis"
+                    });
+                    break;
+                }
+            case "get_data_source_status":
+                {
+                    const sourceMode = typeof input?.sourceMode === "string" ? input.sourceMode : null;
+                    notes.push({
+                        kind: "scope",
+                        title: "Dataset status check",
+                        detail: toolCall.summary,
+                        cue: sourceMode ?? "Source mode"
+                    });
+                    break;
+                }
+            default:
+                break;
+        }
+    }
+    if (chartSpecs?.length) {
+        const firstChart = chartSpecs[0];
+        notes.push({
+            kind: "scope",
+            title: firstChart.title,
+            detail: firstChart.subtitle ? `Rendered as ${firstChart.chartType} with ${firstChart.subtitle.toLowerCase()}.` : `Rendered as ${firstChart.chartType}.`,
+            cue: firstChart.axes.y.label
+        });
+    }
+    return notes.filter((note, index, entries)=>entries.findIndex((entry)=>entry.title === note.title && entry.detail === note.detail) === index).slice(0, 3);
 }
 function createExecutionState() {
     return {

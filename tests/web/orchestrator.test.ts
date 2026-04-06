@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { saveChatTurn } from "@student-reality-lab/db";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { orchestrateChat } from "../../apps/web/src/lib/ai/orchestrator.js";
+import type { ChatStreamEvent } from "../../apps/web/src/lib/chat-stream-types.js";
+import { orchestrateChat, streamChat } from "../../apps/web/src/lib/ai/orchestrator.js";
 
 const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
 const originalFetch = global.fetch;
@@ -34,6 +35,24 @@ describe("orchestrateChat", () => {
       expect.stringContaining("Washington"),
       expect.stringContaining("Newark"),
     ]);
+  });
+
+  it("emits streaming progress events before returning the final response", async () => {
+    const events: ChatStreamEvent[] = [];
+
+    const response = await streamChat({
+      prompt: "Show a rent burden trend chart for Chicago.",
+    }, async (event) => {
+      events.push(event);
+    });
+
+    expect(events.some((event) => event.type === "meta" && event.meta.intent === "metro_trend_chart")).toBe(true);
+    expect(events.some((event) => event.type === "status")).toBe(true);
+    expect(events.some((event) => event.type === "tool-start" && event.toolName === "get_metro_trend")).toBe(true);
+    expect(events.some((event) => event.type === "tool-complete" && event.toolCall.toolName === "get_metro_trend")).toBe(true);
+    expect(events.some((event) => event.type === "artifact" && Array.isArray(event.sources) && event.sources.some((source) => source.title.includes("Chicago")))).toBe(true);
+    expect(events.some((event) => event.type === "artifact" && event.chartSpec?.chartType === "metro_trend_line")).toBe(true);
+    expect(response.message.chartSpec?.title).toContain("Chicago");
   });
 
   it("keeps single-metro trend requests on the single-chart path", async () => {

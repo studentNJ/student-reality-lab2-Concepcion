@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ChartSpec } from "@student-reality-lab/shared";
+import type { ChatStreamEvent } from "@web/lib/chat-stream-types";
 import type { ChatMessage, SourceNote, ToolCallSummary } from "@web/lib/chat-types";
-import { runTool, type ToolExecution } from "./tool-runner";
+import { runTool, type SupportedToolName, type ToolExecution } from "./tool-runner";
 
 const workspaceRoot = path.resolve(process.cwd(), "../../");
 
@@ -157,7 +158,7 @@ interface ExecutionState {
 
 interface ExecutionStep {
   id: string;
-  execute: (state: ExecutionState) => Promise<void>;
+  execute: (state: ExecutionState, observer?: ExecutionObserver) => Promise<void>;
 }
 
 interface ExecutionPlan {
@@ -165,6 +166,16 @@ interface ExecutionPlan {
   steps: ExecutionStep[];
   buildMessage: (state: ExecutionState) => ChatMessage;
 }
+
+interface ExecutionObserver {
+  onStatus?: (content: string) => Promise<void> | void;
+  onToolStart?: (toolName: SupportedToolName, input?: Record<string, unknown>) => Promise<void> | void;
+  onToolCalls?: (toolCalls: ToolCallSummary[]) => Promise<void> | void;
+  onChartSpecs?: (chartSpecs: ChartSpec[]) => Promise<void> | void;
+  onSources?: (sources: SourceNote[]) => Promise<void> | void;
+}
+
+type StreamEmitter = (event: Exclude<ChatStreamEvent, { type: "final" }>) => Promise<void> | void;
 
 interface OpenAiMessage {
   role: "system" | "user";
@@ -1136,6 +1147,23 @@ function recordToolExecution(state: ExecutionState, execution: ToolExecution<any
   state.toolCalls.push(execution.summary);
 }
 
+async function runObservedTool<TToolName extends SupportedToolName>(
+  state: ExecutionState,
+  observer: ExecutionObserver | undefined,
+  toolName: TToolName,
+  input: unknown = {},
+): Promise<ToolExecution<TToolName>> {
+  await observer?.onToolStart?.(
+    toolName,
+    typeof input === "object" && input !== null ? input as Record<string, unknown> : undefined,
+  );
+
+  const execution = await runTool(toolName, input);
+  recordToolExecution(state, execution);
+
+  return execution;
+}
+
 function createImmediatePlan(
   intent: OrchestrationPlan["intent"],
   buildMessage: (state: ExecutionState) => ChatMessage,
@@ -1163,10 +1191,9 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
         steps: [
           {
             id: "load-data-source-status",
-            execute: async (state) => {
-              const status = await runTool("get_data_source_status");
+            execute: async (state, observer) => {
+              const status = await runObservedTool(state, observer, "get_data_source_status");
               setExecutionValue(state, "data_source_status", status);
-              recordToolExecution(state, status);
             },
           },
         ],
@@ -1196,8 +1223,8 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
         steps: [
           {
             id: "calculate-affordability",
-            execute: async (state) => {
-              const affordability = await runTool("calculate_affordability", {
+            execute: async (state, observer) => {
+              const affordability = await runObservedTool(state, observer, "calculate_affordability", {
                 annualIncome: plan.annualIncome,
                 monthlyDebt: plan.monthlyDebt,
                 roommates: plan.roommates,
@@ -1207,7 +1234,6 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
               });
 
               setExecutionValue(state, "affordability", affordability);
-              recordToolExecution(state, affordability);
             },
           },
         ],
@@ -1239,20 +1265,19 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
         steps: [
           {
             id: "compare-affordability-scenarios",
-            execute: async (state) => {
-              const comparison = await runTool("compare_affordability_scenarios", {
+            execute: async (state, observer) => {
+              const comparison = await runObservedTool(state, observer, "compare_affordability_scenarios", {
                 annualIncome: plan.annualIncome,
                 targetMetro: plan.targetMetro ?? undefined,
                 scenarios: plan.scenarios,
               });
               setExecutionValue(state, "compare_affordability_scenarios", comparison);
-              recordToolExecution(state, comparison);
 
               if (!comparison.ok) {
                 return;
               }
 
-              const graph = await runTool("create_graph", {
+              const graph = await runObservedTool(state, observer, "create_graph", {
                 inputMode: "helper",
                 graphType: "affordability_scenario_bar",
                 sourceTool: "calculate_affordability",
@@ -1263,7 +1288,6 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
                 metric: chartMetric,
               });
               setExecutionValue(state, "compare_affordability_scenarios_graph", graph);
-              recordToolExecution(state, graph);
 
               if (graph.ok) {
                 state.chartSpecs.push(graph.result.data);
@@ -1308,10 +1332,9 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
       const steps: ExecutionStep[] = [
         {
           id: "load-metrics-snapshot",
-          execute: async (state) => {
-            const snapshot = await runTool("get_metrics_snapshot", { year });
+          execute: async (state, observer) => {
+            const snapshot = await runObservedTool(state, observer, "get_metrics_snapshot", { year });
             setExecutionValue(state, "metrics_snapshot", snapshot);
-            recordToolExecution(state, snapshot);
           },
         },
       ];
@@ -1319,14 +1342,14 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
       if (plan.wantsChart) {
         steps.push({
           id: "build-metrics-snapshot-graph",
-          execute: async (state) => {
+          execute: async (state, observer) => {
             const snapshot = getExecutionValue<ToolExecution<"get_metrics_snapshot">>(state, "metrics_snapshot");
 
             if (!snapshot?.ok) {
               return;
             }
 
-            const graph = await runTool("create_graph", {
+            const graph = await runObservedTool(state, observer, "create_graph", {
               inputMode: "helper",
               graphType: "metro_snapshot_bar",
               sourceTool: "get_metrics_snapshot",
@@ -1342,7 +1365,6 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
             });
 
             setExecutionValue(state, "metrics_snapshot_graph", graph);
-            recordToolExecution(state, graph);
 
             if (graph.ok) {
               state.chartSpecs.push(graph.result.data);
@@ -1392,10 +1414,9 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
       const steps: ExecutionStep[] = [
         {
           id: "load-metrics-range",
-          execute: async (state) => {
-            const range = await runTool("get_metrics_by_range", { startYear, endYear });
+          execute: async (state, observer) => {
+            const range = await runObservedTool(state, observer, "get_metrics_by_range", { startYear, endYear });
             setExecutionValue(state, "metrics_range", range);
-            recordToolExecution(state, range);
           },
         },
       ];
@@ -1403,16 +1424,15 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
       if (plan.wantsChart) {
         steps.push({
           id: "build-metrics-range-graph",
-          execute: async (state) => {
+          execute: async (state, observer) => {
             const range = getExecutionValue<ToolExecution<"get_metrics_by_range">>(state, "metrics_range");
 
             if (!range?.ok) {
               return;
             }
 
-            const graph = await runTool("create_graph", buildRangeGraphRequest(metric, startYear, endYear, range.result.data.rows));
+            const graph = await runObservedTool(state, observer, "create_graph", buildRangeGraphRequest(metric, startYear, endYear, range.result.data.rows));
             setExecutionValue(state, "metrics_range_graph", graph);
-            recordToolExecution(state, graph);
 
             if (graph.ok) {
               state.chartSpecs.push(graph.result.data);
@@ -1464,21 +1484,20 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
         steps: [
           {
             id: "compare-metros",
-            execute: async (state) => {
-              const comparison = await runTool("compare_metros", {
+            execute: async (state, observer) => {
+              const comparison = await runObservedTool(state, observer, "compare_metros", {
                 metros: plan.metros,
                 startYear,
                 endYear,
                 metric: "rent_burden_percent",
               });
               setExecutionValue(state, "compare_metros", comparison);
-              recordToolExecution(state, comparison);
 
               if (!comparison.ok || !plan.wantsChart) {
                 return;
               }
 
-              const graph = await runTool("create_graph", {
+              const graph = await runObservedTool(state, observer, "create_graph", {
                 inputMode: "helper",
                 graphType: "metro_compare_line",
                 sourceTool: "get_metro_trend",
@@ -1486,7 +1505,6 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
                 metric: "rent_burden_percent",
               });
               setExecutionValue(state, "compare_metros_graph", graph);
-              recordToolExecution(state, graph);
 
               if (graph.ok) {
                 state.chartSpecs.push(graph.result.data);
@@ -1535,16 +1553,15 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
         intent: plan.intent,
         steps: metros.map((metro, index) => ({
           id: `build-trend-chart-${index}`,
-          execute: async (state) => {
-            const trend = await runTool("get_metro_trend", { metro, startYear, endYear });
-            recordToolExecution(state, trend);
+          execute: async (state, observer) => {
+            const trend = await runObservedTool(state, observer, "get_metro_trend", { metro, startYear, endYear });
 
             if (!trend.ok) {
               state.failedMetros.push(metro);
               return;
             }
 
-            const graph = await runTool("create_graph", {
+            const graph = await runObservedTool(state, observer, "create_graph", {
               inputMode: "helper",
               graphType: "metro_trend_line",
               sourceTool: "get_metro_trend",
@@ -1556,7 +1573,6 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
                 showGrid: true,
               },
             });
-            recordToolExecution(state, graph);
 
             if (!graph.ok) {
               state.failedMetros.push(metro);
@@ -1620,24 +1636,116 @@ function formatSeriesList(values: string[]): string {
   return `${values.slice(0, -1).join(", ")}, and ${values[values.length - 1]}`;
 }
 
-async function executePlan(plan: ExecutionPlan): Promise<ChatMessage> {
+function formatStepStatus(planIntent: ExecutionPlan["intent"], stepIndex: number, stepCount: number): string {
+  const suffix = stepCount > 1 ? ` (${stepIndex + 1}/${stepCount})` : "";
+
+  switch (planIntent) {
+    case "metro_trend_chart":
+      return `Loading trend data and building charts${suffix}.`;
+    case "compare_metros":
+      return `Comparing metro trends${suffix}.`;
+    case "metrics_snapshot":
+      return `Loading the requested yearly snapshot${suffix}.`;
+    case "metrics_range":
+      return `Loading the requested year-range summary${suffix}.`;
+    case "affordability":
+      return `Calculating affordability${suffix}.`;
+    case "compare_affordability_scenarios":
+      return `Comparing affordability scenarios${suffix}.`;
+    case "data_source_status":
+      return `Checking dataset status${suffix}.`;
+    case "clarification":
+      return "Preparing a clarification request.";
+    case "help":
+      return "Preparing guidance.";
+  }
+}
+
+async function executePlan(plan: ExecutionPlan, observer?: ExecutionObserver): Promise<ChatMessage> {
   const state = createExecutionState();
 
-  for (const step of plan.steps) {
-    await step.execute(state);
+  for (const [stepIndex, step] of plan.steps.entries()) {
+    await observer?.onStatus?.(formatStepStatus(plan.intent, stepIndex, plan.steps.length));
+    const previousToolCount = state.toolCalls.length;
+    const previousChartCount = state.chartSpecs.length;
+    await step.execute(state, observer);
+
+    const newToolCalls = state.toolCalls.slice(previousToolCount);
+    const newChartSpecs = state.chartSpecs.slice(previousChartCount);
+    const newSources = buildSourceNotes(newToolCalls, newChartSpecs);
+
+    if (newToolCalls.length > 0) {
+      await observer?.onToolCalls?.(newToolCalls);
+    }
+
+    if (newChartSpecs.length > 0) {
+      await observer?.onChartSpecs?.(newChartSpecs);
+    }
+
+    if (newSources.length > 0) {
+      await observer?.onSources?.(newSources);
+    }
   }
 
   return plan.buildMessage(state);
 }
 
-export async function orchestrateChat(request: ChatApiRequest): Promise<ChatApiResponse> {
+async function buildPlanningContext(): Promise<PlanningContext> {
   const metros = await runTool("get_metros");
   const years = await runTool("get_available_years");
 
-  const context: PlanningContext = {
+  return {
     metros: metros.ok ? metros.result.data.metros.map((metro) => metro.name) : [],
     years: years.ok ? years.result.data.years : [],
   };
+}
+
+export async function streamChat(request: ChatApiRequest, emit: StreamEmitter): Promise<ChatApiResponse> {
+  const context = await buildPlanningContext();
+  const planning = await planRequest(request, context);
+  const executionPlan = buildExecutionPlan(planning.plan, context);
+
+  await emit({
+    type: "meta",
+    meta: {
+      planner: planning.planner,
+      intent: planning.plan.intent,
+    },
+  });
+
+  const message = await executePlan(executionPlan, {
+    onStatus: async (content) => {
+      await emit({ type: "status", content });
+    },
+    onToolStart: async (toolName, input) => {
+      await emit({ type: "tool-start", toolName, input });
+    },
+    onToolCalls: async (toolCalls) => {
+      for (const toolCall of toolCalls) {
+        await emit({ type: "tool-complete", toolCall });
+      }
+    },
+    onChartSpecs: async (chartSpecs) => {
+      for (const chartSpec of chartSpecs) {
+        await emit({ type: "artifact", chartSpec });
+      }
+    },
+    onSources: async (sources) => {
+      await emit({ type: "artifact", sources });
+    },
+  });
+
+  return {
+    message,
+    meta: {
+      planner: planning.planner,
+      intent: planning.plan.intent,
+    },
+  };
+}
+
+export async function orchestrateChat(request: ChatApiRequest): Promise<ChatApiResponse> {
+  const context = await buildPlanningContext();
 
   const planning = await planRequest(request, context);
   const executionPlan = buildExecutionPlan(planning.plan, context);

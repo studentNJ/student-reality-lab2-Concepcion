@@ -1,0 +1,10 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/chat/stream/route.js")
+R.c("server/chunks/[root-of-the-server]__15c86371._.js")
+R.c("server/chunks/node_modules_next_dist_be4479d4._.js")
+R.c("server/chunks/node_modules_zod_04d23748._.js")
+R.c("server/chunks/node_modules_@modelcontextprotocol_sdk_dist_esm_b4e5f976._.js")
+R.c("server/chunks/node_modules_ajv_dist_c772eb45._.js")
+R.c("server/chunks/[root-of-the-server]__c29c6cf0._.js")
+R.c("server/chunks/apps_web__next-internal_server_app_api_chat_stream_route_actions_be4df624.js")
+R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/apps/web/src/app/api/chat/stream/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/apps/web/src/app/api/chat/stream/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports
