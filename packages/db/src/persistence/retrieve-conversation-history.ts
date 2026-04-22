@@ -1,13 +1,23 @@
-import type { Prisma } from "@prisma/client";
 import { getPrismaClient } from "../client.js";
 
-type MessageRecord = Prisma.MessageGetPayload<{
-  include: {
-    toolCalls: true;
-  };
-}>;
+interface ToolCallRecord {
+  toolName: string;
+  status: string;
+  summary: string;
+  input: string | null;
+}
 
-type ToolCallRecord = MessageRecord["toolCalls"][number];
+interface MessageRecord {
+  id: string;
+  role: string;
+  state: string | null;
+  content: string;
+  planner: string | null;
+  intent: string | null;
+  chartSpec: string | null;
+  createdAt: Date;
+  toolCalls: ToolCallRecord[];
+}
 
 export interface RetrieveConversationHistoryInput {
   conversationId: string;
