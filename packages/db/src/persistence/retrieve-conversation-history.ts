@@ -68,31 +68,32 @@ export async function retrieveConversationHistory(
   });
 
   const slicedRecords = input.limit ? records.slice(-input.limit) : records;
+  const messages: RetrievedMessage[] = slicedRecords.map((record): RetrievedMessage => ({
+    id: record.id,
+    role: record.role === "assistant" ? "assistant" : "user",
+    state: record.state ?? undefined,
+    content: record.content,
+    planner: record.planner ?? undefined,
+    intent: record.intent ?? undefined,
+    hasChartSpec: record.chartSpec !== null,
+    createdAt: record.createdAt.toISOString(),
+    toolCalls: input.includeToolCalls
+      ? record.toolCalls.map((toolCall): RetrievedToolCall => ({
+          toolName: toolCall.toolName,
+          status: toolCall.status === "error"
+            ? "error"
+            : toolCall.status === "pending"
+              ? "pending"
+              : "success",
+          summary: toolCall.summary,
+          input: parseToolInput(toolCall.input),
+        }))
+      : undefined,
+  }));
 
   return {
     conversationId: input.conversationId,
     totalMessages: records.length,
-    messages: slicedRecords.map((record) => ({
-      id: record.id,
-      role: record.role === "assistant" ? "assistant" : "user",
-      state: record.state ?? undefined,
-      content: record.content,
-      planner: record.planner ?? undefined,
-      intent: record.intent ?? undefined,
-      hasChartSpec: record.chartSpec !== null,
-      createdAt: record.createdAt.toISOString(),
-      toolCalls: input.includeToolCalls
-        ? record.toolCalls.map((toolCall) => ({
-            toolName: toolCall.toolName,
-            status: toolCall.status === "error"
-              ? "error"
-              : toolCall.status === "pending"
-                ? "pending"
-                : "success",
-            summary: toolCall.summary,
-            input: parseToolInput(toolCall.input),
-          }))
-        : undefined,
-    })),
+    messages,
   };
 }
