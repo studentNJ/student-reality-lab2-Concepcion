@@ -3,10 +3,9 @@ import type { ReactNode } from "react";
 interface ChatWorkspaceProps {
   conversation: ReactNode;
   composer: ReactNode;
-  context: ReactNode;
 }
 
-export function ChatWorkspace({ conversation, composer, context }: ChatWorkspaceProps) {
+export function ChatWorkspace({ conversation, composer }: ChatWorkspaceProps) {
   return (
     <section className="workspace-shell" aria-label="Analysis workspace">
       <div className="workspace-main-panel">
@@ -18,9 +17,6 @@ export function ChatWorkspace({ conversation, composer, context }: ChatWorkspace
         <div className="workspace-thread">{conversation}</div>
         {composer}
       </div>
-      <aside className="workspace-context-panel" aria-label="Workspace context">
-        {context}
-      </aside>
     </section>
   );
 }

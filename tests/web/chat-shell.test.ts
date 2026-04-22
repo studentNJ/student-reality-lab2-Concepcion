@@ -8,21 +8,31 @@ describe("ChatShell", () => {
     vi.unstubAllEnvs();
   });
 
-  it("shows the tool-card status box outside production mode", () => {
+  it("hides passive workspace status surfaces outside production mode", () => {
     vi.stubEnv("NODE_ENV", "test");
 
     const markup = renderToStaticMarkup(React.createElement(ChatShell));
 
-    expect(markup).toContain("Tool cards");
-    expect(markup).toContain("Charts");
+    expect(markup).not.toContain("Tool cards");
+    expect(markup).not.toContain("Workspace status");
+    expect(markup).not.toContain("Workspace context");
+    expect(markup).not.toContain("Session state");
+    expect(markup).not.toContain("Dataset status");
+    expect(markup).not.toContain("Selected context");
+    expect(markup).not.toContain("Transparency");
+    expect(markup).not.toContain("header-metric-card");
+    expect(markup).toContain("Housing analysis studio");
   });
 
-  it("hides the tool-card status box in production mode", () => {
+  it("keeps the shell free of passive workspace status in production mode", () => {
     vi.stubEnv("NODE_ENV", "production");
 
     const markup = renderToStaticMarkup(React.createElement(ChatShell));
 
     expect(markup).not.toContain("Tool cards");
-    expect(markup).toContain("Charts");
+    expect(markup).not.toContain("Workspace status");
+    expect(markup).not.toContain("Workspace context");
+    expect(markup).not.toContain("header-metric-card");
+    expect(markup).toContain("Housing analysis studio");
   });
 });

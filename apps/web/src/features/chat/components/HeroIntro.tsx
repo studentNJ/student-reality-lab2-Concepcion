@@ -6,7 +6,7 @@ interface HeroIntroProps {
 const principleCards = [
   {
     title: "Ask a housing question",
-    description: "Start with a metro trend, yearly comparison, affordability scenario, or source-status check.",
+    description: "Start with a metro trend, yearly comparison, affordability scenario, or ask the chat for current context or data status.",
   },
   {
     title: "Inspect the evidence",

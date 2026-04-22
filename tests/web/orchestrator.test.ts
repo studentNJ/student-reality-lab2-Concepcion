@@ -250,6 +250,60 @@ describe("orchestrateChat", () => {
     expect(response.message.toolCalls?.some((toolCall) => toolCall.toolName === "compare_affordability_scenarios")).toBe(true);
   });
 
+  it("returns dataset status details in chat when explicitly requested", async () => {
+    const response = await orchestrateChat({
+      prompt: "What data source is the app using right now?",
+    });
+
+    expect(response.meta.intent).toBe("data_source_status");
+    expect(response.message.state).toBe("complete");
+    expect(response.message.content).toContain("mode");
+    expect(response.message.toolCalls?.some((toolCall) => toolCall.toolName === "get_data_source_status")).toBe(true);
+    expect(response.message.sources?.some((source) => source.title === "Dataset status check")).toBe(true);
+  });
+
+  it("returns saved context and transparency notes in chat when requested", async () => {
+    const conversationId = randomUUID();
+
+    await saveChatTurn({
+      conversationId,
+      userPrompt: "Show a rent burden trend chart for Chicago.",
+      assistantMessage: {
+        id: `assistant-context-${conversationId}`,
+        role: "assistant",
+        state: "complete",
+        content: "Here is the rent burden trend for Chicago.",
+        toolCalls: [
+          {
+            toolName: "get_metro_trend",
+            status: "success",
+            summary: "Loaded 5 trend points for Chicago.",
+            input: { metro: "Chicago", startYear: 2020, endYear: 2024 },
+          },
+          {
+            toolName: "create_graph",
+            status: "success",
+            summary: "Created a line chart.",
+            input: { graphType: "metro_trend_line" },
+          },
+        ],
+      },
+      planner: "fallback",
+      intent: "metro_trend_chart",
+    });
+
+    const response = await orchestrateChat({
+      prompt: "What context are you using right now?",
+      conversationId,
+    });
+
+    expect(response.meta.intent).toBe("conversation_context");
+    expect(response.message.state).toBe("complete");
+    expect(response.message.content).toContain("Current selected context: Chicago");
+    expect(response.message.content).toContain("successful tool calls");
+    expect(response.message.sources?.some((source) => source.title === "Trend data for Chicago")).toBe(true);
+  });
+
   it("asks for clarification when a comparison prompt omits the year range", async () => {
     const response = await orchestrateChat({
       prompt: "Compare Chicago and Washington.",

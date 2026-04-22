@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ChartSpec } from "@student-reality-lab/shared";
+import type { ChartSpec, ConversationHistoryResponseData } from "@student-reality-lab/shared";
 import type { ChatStreamEvent } from "@web/lib/chat-stream-types";
 import type { ChatMessage, SourceNote, ToolCallSummary } from "@web/lib/chat-types";
 import { runTool, type SupportedToolName, type ToolExecution } from "./tool-runner";
@@ -52,6 +52,10 @@ interface HistoricalPlanningContext {
   householdSize?: number;
   targetMetro?: string | null;
   useEstimatedAfterTaxIncome?: boolean;
+  contextResponse?: {
+    content: string;
+    sources: SourceNote[];
+  };
 }
 
 interface PlanBase {
@@ -63,6 +67,7 @@ interface PlanBase {
     | "affordability"
     | "compare_affordability_scenarios"
     | "data_source_status"
+    | "conversation_context"
     | "clarification"
     | "help";
   assistantMessage?: string;
@@ -127,6 +132,12 @@ interface DataSourceStatusPlan extends PlanBase {
   intent: "data_source_status";
 }
 
+interface ConversationContextPlan extends PlanBase {
+  intent: "conversation_context";
+  assistantMessage: string;
+  sources?: SourceNote[];
+}
+
 interface ClarificationPlan extends PlanBase {
   intent: "clarification";
   clarificationMessage: string;
@@ -144,6 +155,7 @@ type OrchestrationPlan =
   | AffordabilityPlan
   | CompareAffordabilityScenariosPlan
   | DataSourceStatusPlan
+  | ConversationContextPlan
   | ClarificationPlan
   | HelpPlan;
 
@@ -204,6 +216,19 @@ const snapshotMetricAliases = {
 
 function normalizePrompt(input: string): string {
   return input.toLowerCase();
+}
+
+function isConversationContextPrompt(prompt: string): boolean {
+  return prompt.includes("selected context")
+    || prompt.includes("session state")
+    || prompt.includes("transparency")
+    || prompt.includes("source notes")
+    || prompt.includes("sources and method")
+    || prompt.includes("what context")
+    || prompt.includes("which context")
+    || prompt.includes("context are you using")
+    || prompt.includes("context you're using")
+    || prompt.includes("context you are using");
 }
 
 function extractYear(prompt: string, years: number[]): number | undefined {
@@ -520,6 +545,116 @@ function buildHistoryFromMessages(messages: Array<{ role: "user" | "assistant"; 
   }));
 }
 
+type PersistedConversationMessage = ConversationHistoryResponseData["messages"][number];
+
+function derivePersistedFocusContext(messages: PersistedConversationMessage[]): { title: string; summary: string } {
+  for (const message of [...messages].reverse()) {
+    if (message.role !== "assistant") {
+      continue;
+    }
+
+    for (const toolCall of [...(message.toolCalls ?? [])].reverse()) {
+      if (toolCall.status !== "success") {
+        continue;
+      }
+
+      const input = toolCall.input;
+
+      if (!isObjectRecord(input)) {
+        continue;
+      }
+
+      if (toolCall.toolName === "compare_metros" && Array.isArray(input.metros)) {
+        const metros = input.metros.filter((value): value is string => typeof value === "string" && value.length > 0);
+        const startYear = typeof input.startYear === "number" ? input.startYear : null;
+        const endYear = typeof input.endYear === "number" ? input.endYear : null;
+
+        if (metros.length > 0) {
+          return {
+            title: metros.length <= 2 ? metros.join(" and ") : `${metros.slice(0, 2).join(", ")} +${metros.length - 2} more`,
+            summary: startYear && endYear
+              ? `The current comparison context is scoped to ${startYear}-${endYear}.`
+              : "The current comparison context uses multiple metros from this conversation.",
+          };
+        }
+      }
+
+      if (toolCall.toolName === "get_metro_trend" && typeof input.metro === "string") {
+        const startYear = typeof input.startYear === "number" ? input.startYear : null;
+        const endYear = typeof input.endYear === "number" ? input.endYear : null;
+
+        return {
+          title: input.metro,
+          summary: startYear && endYear
+            ? `The active trend context is pinned to ${input.metro} across ${startYear}-${endYear}.`
+            : `The active trend context is pinned to ${input.metro}.`,
+        };
+      }
+
+      if (toolCall.toolName === "calculate_affordability") {
+        const targetMetro = typeof input.targetMetro === "string" ? input.targetMetro : null;
+        const annualIncome = typeof input.annualIncome === "number" ? input.annualIncome : null;
+
+        return {
+          title: targetMetro ?? "Affordability scenario",
+          summary: annualIncome !== null
+            ? `The current affordability context uses an annual income of $${annualIncome.toLocaleString()}${targetMetro ? ` and ${targetMetro} rent context` : ""}.`
+            : "The current affordability context is based on the latest saved scenario.",
+        };
+      }
+
+      if (toolCall.toolName === "get_metrics_snapshot" && typeof input.year === "number") {
+        return {
+          title: `Snapshot for ${input.year}`,
+          summary: `The current snapshot context is scoped to ${input.year}.`,
+        };
+      }
+
+      if (toolCall.toolName === "get_metrics_by_range") {
+        const startYear = typeof input.startYear === "number" ? input.startYear : null;
+        const endYear = typeof input.endYear === "number" ? input.endYear : null;
+
+        return {
+          title: "Range summary",
+          summary: startYear && endYear
+            ? `The current summary context spans ${startYear}-${endYear}.`
+            : "The current summary context uses a saved year range from this conversation.",
+        };
+      }
+    }
+  }
+
+  return {
+    title: "No saved context yet",
+    summary: "Ask a question that runs analysis tools first, then I can summarize the active context and transparency notes in chat.",
+  };
+}
+
+function buildConversationContextResponse(messages: PersistedConversationMessage[]): { content: string; sources: SourceNote[] } {
+  const assistantMessages = messages.filter((message) => message.role === "assistant");
+
+  if (assistantMessages.length === 0) {
+    return {
+      content: "I do not have a saved conversation context yet. Ask a housing question first, then I can summarize the active context and transparency notes here in chat.",
+      sources: [],
+    };
+  }
+
+  const latestAssistant = [...assistantMessages].reverse()[0];
+  const focus = derivePersistedFocusContext(messages);
+  const successfulToolCalls = assistantMessages.reduce((count, message) => {
+    return count + (message.toolCalls ?? []).filter((toolCall) => toolCall.status === "success").length;
+  }, 0);
+  const chartResponses = assistantMessages.filter((message) => message.hasChartSpec).length;
+  const plannerDetail = latestAssistant?.planner ? ` The latest saved planner was ${latestAssistant.planner}.` : "";
+  const intentDetail = latestAssistant?.intent ? ` The latest saved intent was ${latestAssistant.intent}.` : "";
+
+  return {
+    content: `${focus.title === "No saved context yet" ? "I do not have a pinned metro or scenario yet." : `Current selected context: ${focus.title}. ${focus.summary}`} This saved conversation currently has ${assistantMessages.length} assistant responses, ${successfulToolCalls} successful tool calls, and ${chartResponses} chart-backed responses.${plannerDetail}${intentDetail}`,
+    sources: buildSourceNotes(latestAssistant?.toolCalls ?? []),
+  };
+}
+
 async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<HistoricalPlanningContext> {
   const history = request.history ?? [];
 
@@ -551,6 +686,7 @@ async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<H
   );
 
   const reversedMessages = [...conversation.result.data.messages].reverse();
+  const contextResponse = buildConversationContextResponse(conversation.result.data.messages);
 
   for (const message of reversedMessages) {
     if (message.role !== "assistant") {
@@ -576,6 +712,7 @@ async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<H
           history: history.length > 0 ? history : persistedHistory,
           lastIntent: "metro_trend_chart",
           metros,
+          contextResponse,
           startYear: isObjectRecord(firstCallInput) && typeof firstCallInput.startYear === "number" ? firstCallInput.startYear : undefined,
           endYear: isObjectRecord(firstCallInput) && typeof firstCallInput.endYear === "number" ? firstCallInput.endYear : undefined,
         };
@@ -592,6 +729,7 @@ async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<H
         history: history.length > 0 ? history : persistedHistory,
         lastIntent: "metrics_snapshot",
         metros: [],
+        contextResponse,
         year: isObjectRecord(snapshotInput) && typeof snapshotInput.year === "number" ? snapshotInput.year : undefined,
         targetMetro: undefined,
         useEstimatedAfterTaxIncome: undefined,
@@ -608,6 +746,7 @@ async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<H
           history: history.length > 0 ? history : persistedHistory,
           lastIntent: "affordability",
           metros: [],
+          contextResponse,
           annualIncome: typeof affordabilityInput.annualIncome === "number" ? affordabilityInput.annualIncome : undefined,
           monthlyDebt: typeof affordabilityInput.monthlyDebt === "number" ? affordabilityInput.monthlyDebt : undefined,
           roommates: typeof affordabilityInput.roommates === "number" ? affordabilityInput.roommates : undefined,
@@ -625,6 +764,7 @@ async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<H
         history: history.length > 0 ? history : persistedHistory,
         lastIntent: "data_source_status",
         metros: [],
+        contextResponse,
       };
     }
   }
@@ -632,6 +772,7 @@ async function loadHistoricalPlanningContext(request: ChatApiRequest): Promise<H
   return {
     history: history.length > 0 ? history : persistedHistory,
     metros: [],
+    contextResponse,
   };
 }
 
@@ -832,6 +973,14 @@ function buildFallbackPlan(prompt: string, context: PlanningContext, historical:
     };
   }
 
+  if (isConversationContextPrompt(normalizedPrompt)) {
+    return {
+      intent: "conversation_context",
+      assistantMessage: historical.contextResponse?.content ?? "I do not have a saved conversation context yet. Ask a housing question first, then I can summarize the active context and transparency notes here in chat.",
+      sources: historical.contextResponse?.sources,
+    };
+  }
+
   if (normalizedPrompt.includes("source") || normalizedPrompt.includes("dataset") || normalizedPrompt.includes("data status")) {
     return { intent: "data_source_status" };
   }
@@ -891,11 +1040,12 @@ async function planWithModel(prompt: string, history: ChatApiRequest["history"],
       content: [
         "You are a planning model for a housing affordability assistant.",
         "Return only JSON.",
-        "Choose one intent from: metro_trend_chart, compare_metros, metrics_snapshot, metrics_range, affordability, compare_affordability_scenarios, data_source_status, help.",
+        "Choose one intent from: metro_trend_chart, compare_metros, metrics_snapshot, metrics_range, affordability, compare_affordability_scenarios, data_source_status, conversation_context, help.",
         "If the user asks for a chart or trend, prefer metro_trend_chart when a metro is present; otherwise use metrics_snapshot.",
         "Use compare_metros for direct multi-metro comparison requests over the same year range.",
         "Use metrics_range for average or summary requests across a year range.",
         "Use compare_affordability_scenarios for prompts comparing solo versus roommate affordability or similar scenario-based affordability tradeoffs.",
+        "Use conversation_context when the user asks for the current selected context, session state, transparency notes, or what the conversation is currently using.",
         "If the user asks for multiple metros, return metros as an ordered array matching the request order.",
         "Only use metro names from this list:",
         context.metros.join(", "),
@@ -989,9 +1139,10 @@ function createAssistantMessage(input: {
   chartSpec?: ChartSpec;
   chartSpecs?: ChartSpec[];
   toolCalls?: ToolCallSummary[];
+  sources?: SourceNote[];
 }): ChatMessage {
   const chartSpecs = input.chartSpecs ?? (input.chartSpec ? [input.chartSpec] : undefined);
-  const sources = buildSourceNotes(input.toolCalls ?? [], chartSpecs);
+  const sources = input.sources ?? buildSourceNotes(input.toolCalls ?? [], chartSpecs);
 
   return {
     id: `assistant-${crypto.randomUUID()}`,
@@ -1199,17 +1350,42 @@ function buildExecutionPlan(plan: OrchestrationPlan, context: PlanningContext): 
         ],
         buildMessage: (state) => {
           const status = getExecutionValue<ToolExecution<"get_data_source_status">>(state, "data_source_status");
+          const detailCandidate = status?.ok ? status.result.data.details?.[0] : null;
+          const detail = isObjectRecord(detailCandidate) ? detailCandidate : null;
+          const datasetLabel = typeof detail?.datasetLabel === "string" ? detail.datasetLabel : null;
+          const configuredMode = typeof detail?.configuredMode === "string" ? detail.configuredMode : null;
+          const activeSourceValue = typeof detail?.activeSource === "string" ? detail.activeSource : null;
+          const datasetType = typeof detail?.datasetType === "string" ? detail.datasetType : null;
+          const metroCount = typeof detail?.metroCount === "number" ? detail.metroCount : null;
+          const startYear = typeof detail?.startYear === "number" ? detail.startYear : null;
+          const endYear = typeof detail?.endYear === "number" ? detail.endYear : null;
+          const lastRefreshed = typeof detail?.lastRefreshed === "string" ? detail.lastRefreshed : null;
+          const coverage = detail
+            ? (metroCount !== null && startYear !== null && endYear !== null
+              ? `${metroCount} metros across ${startYear}-${endYear}`
+              : metroCount !== null
+                ? `${metroCount} metros`
+                : null)
+            : null;
+          const activeSource = activeSourceValue === "csv_fallback" ? "CSV fallback" : activeSourceValue;
 
           return createAssistantMessage({
             state: status?.ok ? "complete" : "error",
             content: status?.ok
-              ? `The dataset is currently running in ${status.result.data.sourceMode} mode.`
+              ? detail
+                ? `${datasetLabel ?? "The dataset"} is currently running in ${status.result.data.sourceMode} mode. ${coverage ? `Coverage includes ${coverage}. ` : ""}The configured source is ${configuredMode ?? "unknown"}, the active source is ${activeSource ?? "unknown"}, and the dataset type is ${datasetType ?? "unknown"}. Last refreshed: ${lastRefreshed ?? "unknown"}.`
+                : `The dataset is currently running in ${status.result.data.sourceMode} mode, but detailed coverage metadata is unavailable.`
               : "I could not retrieve the current data source status.",
             toolCalls: state.toolCalls,
           });
         },
       };
     }
+    case "conversation_context":
+      return createImmediatePlan(plan.intent, () => createAssistantMessage({
+        content: plan.assistantMessage,
+        sources: plan.sources,
+      }));
     case "affordability": {
       if (!plan.annualIncome) {
         return createImmediatePlan(plan.intent, () => createAssistantMessage({
@@ -1654,6 +1830,8 @@ function formatStepStatus(planIntent: ExecutionPlan["intent"], stepIndex: number
       return `Comparing affordability scenarios${suffix}.`;
     case "data_source_status":
       return `Checking dataset status${suffix}.`;
+    case "conversation_context":
+      return "Summarizing the saved conversation context.";
     case "clarification":
       return "Preparing a clarification request.";
     case "help":

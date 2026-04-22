@@ -9,13 +9,12 @@ import { HeaderBar } from "./HeaderBar";
 import { HeroIntro } from "./HeroIntro";
 import { MessageList } from "./MessageList";
 import { PromptBox } from "./PromptBox";
-import { WorkspaceContext } from "./WorkspaceContext";
 
 const starterPrompts = [
   "Show a rent burden trend chart for Chicago.",
   "Compare metro affordability for 2024.",
   "Estimate whether a $72,000 salary can afford rent.",
-  "What data source is the app using right now?",
+  "What context are you using right now?",
 ];
 
 const initialMessages: ChatMessage[] = [];
@@ -35,11 +34,14 @@ function buildPendingContent(prompt: string): string {
     return "Checking the current data source status and packaging the response.";
   }
 
+  if (normalizedPrompt.includes("context") || normalizedPrompt.includes("transparency") || normalizedPrompt.includes("session state")) {
+    return "Summarizing the saved conversation context and packaging the supporting notes in chat.";
+  }
+
   return "Planning the request and gathering the tool output needed for the answer.";
 }
 
 export function ChatShell() {
-  const showToolCards = process.env.NODE_ENV !== "production";
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [isPending, setIsPending] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
@@ -48,20 +50,6 @@ export function ChatShell() {
   const streamAbortRef = useRef<AbortController | null>(null);
   const activeStreamRequestIdRef = useRef(0);
   const visibleMessages = isPending && streamingMessage ? [...messages, streamingMessage] : messages;
-
-  const successfulToolCalls = messages.reduce((count, message) => {
-    const toolCalls = message.toolCalls ?? (message.toolCall ? [message.toolCall] : []);
-    return count + toolCalls.filter((toolCall) => toolCall.status === "success").length;
-  }, 0);
-  const chartCount = messages.reduce((count, message) => {
-    return count + (message.chartSpecs?.length ?? (message.chartSpec ? 1 : 0));
-  }, 0);
-  const hasErrors = messages.some((message) => {
-    const toolCalls = message.toolCalls ?? (message.toolCall ? [message.toolCall] : []);
-    return message.state === "error" || toolCalls.some((toolCall) => toolCall.status === "error");
-  });
-  const modeLabel = plannerMode === "live-api" ? "Live API" : plannerMode === "model" ? "Model plan" : "Fallback plan";
-  const statusLabel = hasErrors ? "Needs review" : isPending ? "Working" : "Ready";
 
   function createPendingMessage(prompt: string): ChatMessage {
     return {
@@ -322,21 +310,11 @@ export function ChatShell() {
 
   return (
     <AppShell
-      header={
-        <HeaderBar
-          chartCount={chartCount}
-          hasErrors={hasErrors}
-          modeLabel={modeLabel}
-          showToolCards={showToolCards}
-          statusLabel={statusLabel}
-          toolCount={successfulToolCalls}
-        />
-      }
+      header={<HeaderBar />}
       hero={<HeroIntro onPromptSelect={handleSubmit} suggestions={starterPrompts} />}
     >
       <ChatWorkspace
         composer={<PromptBox disabled={isPending} onSubmit={handleSubmit} />}
-        context={<WorkspaceContext chartCount={chartCount} hasErrors={hasErrors} isPending={isPending} messages={messages} modeLabel={modeLabel} statusLabel={statusLabel} />}
         conversation={<MessageList messages={visibleMessages} />}
       />
     </AppShell>

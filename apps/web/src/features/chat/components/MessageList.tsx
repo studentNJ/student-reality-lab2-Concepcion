@@ -102,7 +102,7 @@ export function MessageList({ messages }: MessageListProps) {
     return (
       <section className="message-list" aria-label="Conversation">
         <EmptyState
-          description="Ask for a metro trend, a yearly comparison, an affordability estimate, or the current data source status. Charts and tool output will appear inline with the response."
+          description="Ask for a metro trend, a yearly comparison, an affordability estimate, or ask the chat for the current data source or selected context. Charts and supporting notes will appear inline with the response."
           title="Start with a metro, a scenario, or a chart request."
         />
       </section>

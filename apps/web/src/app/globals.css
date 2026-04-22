@@ -53,8 +53,6 @@ body {
 .hero-panel,
 .workspace-shell,
 .workspace-main-panel,
-.workspace-context-panel,
-.context-card,
 .artifact-card,
 .empty-state,
 .prompt-box-shell {
@@ -66,17 +64,13 @@ body {
 }
 
 .header-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
-  gap: 1.2rem;
+  display: block;
   align-items: start;
   padding: 1.2rem 1.35rem;
 }
 
 .header-kicker,
 .workspace-eyebrow,
-.context-card-eyebrow,
-.header-metric-card span,
 .message-meta,
 .artifact-label,
 .artifact-mode,
@@ -121,33 +115,6 @@ body {
   margin: 0.75rem 0 0;
   line-height: 1.55;
   color: rgba(26, 24, 20, 0.74);
-}
-
-.header-metadata {
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-}
-
-.header-metric-card {
-  border-radius: var(--radius-sm);
-  padding: 0.95rem 1rem;
-  background: rgba(255, 255, 255, 0.68);
-  border: 1px solid rgba(26, 24, 20, 0.07);
-  box-shadow: var(--shadow-soft);
-}
-
-.header-metric-card span {
-  display: block;
-  margin-bottom: 0.28rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(26, 24, 20, 0.56);
-}
-
-.header-metric-card strong {
-  font-size: 1rem;
 }
 
 .insight-badge {
@@ -275,9 +242,7 @@ body {
 }
 
 .workspace-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.7fr);
-  gap: 1rem;
+  display: block;
   padding: 0;
   background: transparent;
   border: 0;
@@ -285,26 +250,13 @@ body {
   backdrop-filter: none;
 }
 
-.workspace-main-panel,
-.workspace-context-panel {
+.workspace-main-panel {
   padding: 1.15rem;
 }
 
 .workspace-main-panel {
   display: grid;
   gap: 1rem;
-}
-
-.workspace-context-panel {
-  display: grid;
-  gap: 0.9rem;
-  align-content: start;
-  align-self: start;
-  position: sticky;
-  top: var(--sticky-rail-offset);
-  max-height: calc(100vh - (var(--sticky-rail-offset) * 2));
-  overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .workspace-heading {
@@ -321,14 +273,12 @@ body {
 }
 
 .workspace-heading h2,
-.context-card h3,
 .empty-state h3 {
   margin: 0;
   font-size: 1.2rem;
 }
 
 .workspace-copy,
-.context-card p,
 .empty-state p {
   margin: 0;
   line-height: 1.58;
@@ -339,90 +289,12 @@ body {
   min-height: 320px;
 }
 
-.context-card {
-  display: grid;
-  gap: 0.55rem;
-  padding: 1rem;
-  box-shadow: var(--shadow-soft);
-}
-
-.context-card-eyebrow,
 .empty-state-eyebrow {
   margin: 0;
   font-size: 0.7rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--brick);
-}
-
-.context-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-}
-
-.context-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.context-stats dt {
-  margin: 0;
-  font-family: var(--font-mono), monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(26, 24, 20, 0.56);
-}
-
-.context-stats dd {
-  margin: 0.25rem 0 0;
-  line-height: 1.45;
-}
-
-.context-source-list {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.context-source-item {
-  display: grid;
-  gap: 0.25rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(26, 24, 20, 0.09);
-}
-
-.context-source-item:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.context-source-item span {
-  font-family: var(--font-mono), monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--brick);
-}
-
-.context-source-item strong {
-  font-size: 0.96rem;
-}
-
-.context-source-item p {
-  margin: 0;
-}
-
-.context-list {
-  margin: 0;
-  padding-left: 1rem;
-  color: rgba(26, 24, 20, 0.82);
-}
-
-.context-list li {
-  line-height: 1.55;
 }
 
 .message-list {
@@ -1040,13 +912,11 @@ body {
   .header-bar,
   .hero-panel,
   .workspace-main-panel,
-  .workspace-context-panel,
   .message,
   .artifact-card,
   .prompt-box,
   .prompt-box-shell,
-  .empty-state,
-  .context-card {
+  .empty-state {
     border-radius: 20px;
   }
 
@@ -1054,13 +924,6 @@ body {
   .workspace-shell,
   .hero-principles {
     grid-template-columns: 1fr;
-  }
-
-  .workspace-context-panel {
-    position: static;
-    top: auto;
-    max-height: none;
-    overflow-y: visible;
   }
 
   .message {
@@ -1072,10 +935,6 @@ body {
   }
 
   .chart-facts {
-    grid-template-columns: 1fr;
-  }
-
-  .context-stats {
     grid-template-columns: 1fr;
   }
 
