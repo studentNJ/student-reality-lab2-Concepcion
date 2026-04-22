@@ -45,6 +45,18 @@
       "regex": "^/api/chat(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/api/chat(?:/)?$"
+    },
+    {
+      "page": "/api/chat/stream",
+      "regex": "^/api/chat/stream(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/chat/stream(?:/)?$"
+    },
+    {
+      "page": "/api/data-source-status",
+      "regex": "^/api/data\\-source\\-status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/data\\-source\\-status(?:/)?$"
     }
   ],
   "dataRoutes": [],

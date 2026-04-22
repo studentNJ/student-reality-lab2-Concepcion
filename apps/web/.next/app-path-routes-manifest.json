@@ -2,5 +2,7 @@
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
   "/api/chat/route": "/api/chat",
+  "/api/chat/stream/route": "/api/chat/stream",
+  "/api/data-source-status/route": "/api/data-source-status",
   "/page": "/"
 }
