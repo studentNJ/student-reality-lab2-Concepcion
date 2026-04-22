@@ -1,4 +1,13 @@
+import type { Prisma } from "@prisma/client";
 import { getPrismaClient } from "../client.js";
+
+type MessageRecord = Prisma.MessageGetPayload<{
+  include: {
+    toolCalls: true;
+  };
+}>;
+
+type ToolCallRecord = MessageRecord["toolCalls"][number];
 
 export interface RetrieveConversationHistoryInput {
   conversationId: string;
@@ -57,7 +66,7 @@ export async function retrieveConversationHistory(
     return null;
   }
 
-  const records = await prisma.message.findMany({
+  const records: MessageRecord[] = await prisma.message.findMany({
     where: { conversationId: input.conversationId },
     orderBy: { sequence: "asc" },
     include: {
@@ -67,8 +76,8 @@ export async function retrieveConversationHistory(
     },
   });
 
-  const slicedRecords = input.limit ? records.slice(-input.limit) : records;
-  const messages: RetrievedMessage[] = slicedRecords.map((record): RetrievedMessage => ({
+  const slicedRecords: MessageRecord[] = input.limit ? records.slice(-input.limit) : records;
+  const messages: RetrievedMessage[] = slicedRecords.map((record: MessageRecord): RetrievedMessage => ({
     id: record.id,
     role: record.role === "assistant" ? "assistant" : "user",
     state: record.state ?? undefined,
@@ -78,7 +87,7 @@ export async function retrieveConversationHistory(
     hasChartSpec: record.chartSpec !== null,
     createdAt: record.createdAt.toISOString(),
     toolCalls: input.includeToolCalls
-      ? record.toolCalls.map((toolCall): RetrievedToolCall => ({
+      ? record.toolCalls.map((toolCall: ToolCallRecord): RetrievedToolCall => ({
           toolName: toolCall.toolName,
           status: toolCall.status === "error"
             ? "error"
